@@ -29,7 +29,8 @@
             
             /* ESTRUTURA DE GRID: 1. Nome do Produto, 2. Área Inferior */
             display: grid;
-            grid-template-rows: 25px 84px; /* 25px p/ o Nome (~8mm), 84px p/ o rodapé (~22mm) */
+            /* 25px p/ o Nome (~8mm) | 84px p/ o rodapé (~22mm) */
+            grid-template-rows: 25px 84px; 
         }
         
         /* ------------------ 1. NOME DO PRODUTO (TOPO) ------------------ */
@@ -52,60 +53,80 @@
         .bottom-row {
             grid-row: 2;
             display: flex;
-            justify-content: space-between;
+            /* Usamos 'flex-start' para o alinhamento principal, focando no alinhamento vertical dos filhos */
             align-items: flex-start; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (60% - ESQUERDA) - ALINHAMENTO GARANTIDO */
+        /* 2.1. CÓDIGO DE BARRAS (55MM - ESQUERDA) - ALINHAMENTO À ESQUERDA GARANTIDO */
         .barcode-area {
-            width: 60%; 
+            width: 55%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* FIXO: Alinha o conteúdo (incluindo o SVG e o EAN) à margem esquerda */
-            justify-content: flex-end; 
+            align-items: flex-start; /* FIXO: Alinha o conteúdo à margem esquerda de sua área */
+            justify-content: flex-end; /* Alinha o conteúdo para baixo */
             padding-top: 2px;
             height: 100%;
-            padding-left: 2px;
+            padding-left: 0; /* A margem interna de 2px já está no .gondola-label */
+            /* Aumentamos a margem interna do código para empurrar o preço para perto */
+        }
+        .barcode-container {
+             width: 100%;
+             /* Garante que o SVG fique alinhado à esquerda dentro do seu contêiner */
+             display: flex; 
+             justify-content: flex-start; 
         }
         .barcode-container svg {
-             width: 95%;
-             height: 45px;
+             width: 95%; /* Maximiza largura, mas permite ajuste fino */
+             height: 40px; /* Altura do código de barras */
         }
+        /* Alinhamento forçado do número EAN abaixo do código */
         .ean-text {
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
             margin-top: 1px;
             color: #000;
-            text-align: left; /* GARANTIA: Força alinhamento do texto EAN à esquerda */
-            width: 100%; /* GARANTIA: Ocupa a largura total para forçar o alinhamento */
+            text-align: left; /* GARANTIA: Alinha o texto à esquerda, logo abaixo dos traços */
+            width: 95%; /* Garante que o texto tenha o mesmo alinhamento de 95% do SVG acima */
+            padding-left: 1px; /* Micro-ajuste para ficar exatamente sob o início do código */
+        }
+        .barcode-area .text-xs {
+             width: 95%;
+             text-align: left;
+             padding-left: 1px;
         }
 
-        /* 2.2. PREÇO (40% - DIREITA) - VISUALIZAÇÃO GARANTIDA */
+
+        /* 2.2. PREÇO (35MM - DIREITA) - APROXIMAÇÃO E ALINHAMENTO CORRIGIDOS */
         .price-area {
-            width: 40%; 
+            width: 45%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* FIXO: Alinha o preço à esquerda de sua área, encostando no código */
-            justify-content: center;
+            /* FIXO: Alinha o preço à direita de sua área para encostar na borda da etiqueta */
+            align-items: flex-end; 
+            /* FIXO: Centraliza verticalmente o preço na área inferior */
+            justify-content: center; 
             height: 100%;
-            padding-left: 5px; 
+            padding-right: 2px; /* Margem à direita da etiqueta */
             line-height: 1;
-            position: relative; /* Mantido para posicionar o promo-info */
+            position: relative;
         }
         
         /* Preço: DESTAQUE MÁXIMO (ELEMENTOS DO VALOR) */
         .price-wrapper {
             display: flex;
-            align-items: flex-end; /* FIXO: Alinha Reais e Centavos pela BASE */
+            /* FIXO: Alinha R$, Reais e Centavos pela BASE, evitando que o preço suma */
+            align-items: flex-end; 
             line-height: 1;
+            /* REMOVIDO: Qualquer margem lateral para manter o preço o mais à esquerda possível */
         }
         .price-prefix {
             font-size: 20px; /* R$ */
             font-weight: 700;
             line-height: 1;
-            margin-right: 2px;
-            margin-top: 2px;
+            margin-right: 1px; /* REDUZIDO ao mínimo */
+            margin-top: 0;
+            margin-bottom: 2px; /* Micro-ajuste para alinhar com a base dos reais */
         }
         .price-display {
             font-size: 45px; /* REAIS */
@@ -122,20 +143,21 @@
             font-size: 25px; /* Centavos */
             font-weight: 800;
             line-height: 1.1;
-            /* REMOVIDO: Nenhuma propriedade de posição ou top que possa causar o "desaparecimento" */
+            /* Sem 'top', sem 'position' para não desalinhamento */
         }
 
         .promo-info {
             position: absolute;
             top: 2px; 
-            left: 5px; 
+            right: 2px; /* Alinha o DE/PROMO com a borda direita */
+            left: auto;
             font-size: 8px;
             font-weight: 700;
             color: red;
             line-height: 1;
             text-decoration: line-through;
-            width: calc(100% - 5px);
-            text-align: left; 
+            width: 100%;
+            text-align: right; 
         }
 
 
@@ -175,7 +197,7 @@
             projectId: "coletorprecosapp",
             storageBucket: "coletorprecosapp.firebasestorage.app",
             messagingSenderId: "127089195149",
-            appId: "1:127089195149:web:3d2c8205cf8fb9921124ac4"
+            appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
         };
         
         window.db = null;
@@ -629,11 +651,12 @@
 
                     <div class="bottom-row">
                         <div class="barcode-area">
-                            <div class="mt-0 barcode-container w-full"> 
+                            <div class="mt-0 barcode-container">
                                 <svg id="${barcodeSvgId}"></svg>
                             </div>
                             <p class="ean-text">${product.EAN}</p>
-                            </div>
+                            <p class="text-xs text-gray-700 font-medium">${product.Embalagem || 'UNIDADE'}</p>
+                        </div>
 
                         <div class="price-area">
                             ${isPromo ? `
@@ -652,13 +675,12 @@
             `;
             
             // CHAMADA DA BIBLIOTECA JSBARCODE
-            // displayValue: false é crucial para não ter dois EANs
             if (product.EAN && product.EAN.length === 13) {
                  JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                      format: "EAN13",
                      displayValue: false, 
                      width: 1.5,
-                     height: 40, 
+                     height: 40,
                      margin: 0,
                      textMargin: 0
                  });
@@ -786,7 +808,7 @@
                 R$ ${priceText}
                 <ESC>!<0>
                 ----------
-                
+                EMB: ${product.Embalagem || 'UNIDADE'}
                 ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}` : ''}
                 
                 <GS>k<02><${product.EAN}><00> 
