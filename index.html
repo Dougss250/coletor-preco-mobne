@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coletor de Preços e Etiquetas Bluetooth</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     
@@ -15,18 +16,18 @@
             background-color: #f7f7f7;
         }
         
-        /* --- ESTILOS DA ETIQUETA 100MM x 40MM (377px x 151px) --- */
+        /* --- ESTILOS DA ETIQUETA 100MM x 35MM (377px x 132px) --- */
         .gondola-label {
-            /* DIMENSÕES PARA O PREVIEW: 100MM x 40MM em 96 DPI -> 377px x 151px */
+            /* DIMENSÃO: 100MM x 35MM em 96 DPI -> 377px x 132px */
             width: 377px; 
-            height: 151px; 
+            height: 132px; 
             padding: 4px; 
             box-sizing: border-box;
             background: white;
             border: 1px solid #000; 
             overflow: hidden;
             display: grid;
-            /* AJUSTE: 45px para o nome (segurança), o restante (1fr) para a área inferior */
+            /* AJUSTE: 45px para o nome (garantindo 2 linhas), o restante (1fr, que é ~87px) para a área inferior */
             grid-template-rows: 45px 1fr; 
         }
         
@@ -37,7 +38,7 @@
             align-items: center;
             justify-content: center; 
             width: 100%;
-            height: 45px; /* Altura com segurança para 2 linhas de fonte grande */
+            height: 45px; /* Altura com margem de segurança para 2 linhas */
             overflow: hidden;
             padding: 0 4px; 
         }
@@ -51,7 +52,7 @@
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas, garantindo que caiba */
+            -webkit-line-clamp: 2; /* Limita a 2 linhas, garantindo que caiba sem cortar */
             -webkit-box-orient: vertical;
         }
 
@@ -59,7 +60,7 @@
         .bottom-row {
             grid-row: 2;
             display: flex;
-            /* AJUSTE CRUCIAL: Centraliza o bloco do código/preço verticalmente na área restante */
+            /* AJUSTE CRUCIAL: Centraliza o bloco do código/preço verticalmente na área restante (~87px) */
             align-items: center; 
             padding-bottom: 0; 
         }
@@ -70,18 +71,18 @@
             display: flex;
             flex-direction: column;
             align-items: center; 
-            justify-content: center; /* Centraliza verticalmente o código na sua área (na parte inferior) */
+            justify-content: center; 
             height: 100%;
         }
         .barcode-container {
              width: 95%; 
              display: flex;
-             height: 50px; 
+             height: 45px; /* Reduzindo levemente o barcode para caber melhor na área */
              margin-bottom: 2px;
         }
         .barcode-container svg {
              width: 100%;
-             height: 50px; 
+             height: 45px; 
         }
         .ean-text {
             font-size: 10px;
@@ -98,7 +99,6 @@
             width: 40%; 
             display: flex;
             flex-direction: column;
-            /* Alinha os elementos à direita (R$ 9,99) */
             align-items: flex-end; 
             justify-content: center; /* Centraliza verticalmente o preço na sua área */
             padding-right: 4px;
@@ -112,25 +112,25 @@
             line-height: 1;
         }
         .price-prefix {
-            font-size: 25px; 
+            font-size: 22px; /* Reduzido levemente */
             font-weight: 700;
             margin-right: 2px;
             line-height: 1;
         }
         .price-display {
-            font-size: 60px; 
+            font-size: 55px; /* Reduzido levemente */
             font-weight: 900;
             line-height: 0.9; 
             color: #000;
         }
         .price-separator {
-             font-size: 40px; 
+             font-size: 35px; /* Reduzido levemente */
              font-weight: 900;
              line-height: 0.9;
              margin-right: 1px;
         }
         .price-cents {
-            font-size: 35px; 
+            font-size: 30px; /* Reduzido levemente */
             font-weight: 800;
             line-height: 1.1;
         }
@@ -156,44 +156,35 @@
             line-height: 1;
         }
 
-        /* ------------------------------------------- */
-        /* --- ESTILOS EXCLUSIVOS PARA IMPRESSÃO --- */
-        /* ------------------------------------------- */
-        @media print {
-            /* Oculta tudo que não é a etiqueta */
-            body > *:not(.gondola-label-wrapper) {
-                display: none !important;
-            }
-            
-            /* Define o tamanho exato da folha de impressão para a etiqueta */
-            @page {
-                size: 100mm 40mm; /* Dimensão da etiqueta */
-                margin: 0; /* Remove margens da página */
-                padding: 0;
-            }
-            
-            /* Remove margens e ajusta o body para a impressão */
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: hidden !important;
-            }
-
-            /* Força a etiqueta a ocupar toda a folha na impressão */
-            .gondola-label {
-                width: 100mm !important;
-                height: 40mm !important;
-                /* Remove a borda no modo de impressão para evitar que imprima fora */
-                border: none !important; 
-                /* O padding de 4px no preview equivale a ~1.05mm, mantemos o 4px no print para margem de segurança */
-                padding: 4px !important; 
-                box-sizing: border-box !important;
-            }
+        /* Div Oculta para Renderização da Imagem de Impressão */
+        .print-image-container {
+            position: fixed;
+            top: -9999px; 
+            left: -9999px;
+            z-index: -1;
         }
 
-        /* Div Wrapper para gerenciar a impressão de múltiplas cópias */
-        .gondola-label-wrapper {
-            display: none; /* Oculta no modo tela */
+        /* Estilos do Scanner Modal (Manter) */
+        .scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-video {
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
     </style>
 
@@ -372,20 +363,20 @@
                 <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
                 <div id="selected-product-details" class="text-sm space-y-1"><p class="text-center text-gray-500">Nenhum produto selecionado.</p></div>
                 <div id="print-controls" class="mt-4 hidden">
-                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Cópias (Impressão/PDF):</label>
+                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
                     <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
-                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Abrir PDF)</button>
+                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Gerar Imagem)</button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
             </div>
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
-                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x40mm):</h3>
+                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x35mm):</h3>
                 <div id="label-preview" class="shadow-xl"><p class="text-center text-gray-500 p-8">Selecione um produto</p></div>
             </div>
         </div>
     </main>
     
-    <div id="print-label-wrapper" class="gondola-label-wrapper"></div>
+    <div id="print-image-container" class="print-image-container"></div>
 
     <div id="scanner-modal" class="scanner-modal hidden">
         <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código</h3>
@@ -560,7 +551,7 @@
                      format: ean.length === 13 ? "EAN13" : "CODE128",
                      displayValue: false, 
                      width: 1.8, 
-                     height: 50, 
+                     height: 45, /* Altura do SVG */
                      margin: 0,
                      textMargin: 0
                 });
@@ -576,9 +567,9 @@
             const labelDiv = document.getElementById('label-preview');
             const uniqueId = `preview-${Date.now()}`;
             
-            // Define o tamanho do preview para 100x40mm (377px x 151px)
+            // Define o tamanho do preview para 100x35mm (377px x 132px)
             labelDiv.style.width = '377px';
-            labelDiv.style.height = '151px';
+            labelDiv.style.height = '132px';
 
             labelDiv.innerHTML = generateLabelContent(product, uniqueId);
             generateBarcode(product.EAN, uniqueId);
@@ -648,46 +639,64 @@
             document.getElementById('scanner-video').srcObject = null;
         };
         
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (NOVO FOCO: PDF/Nativo) ----------------------
+        // ---------------------- 5. LÓGICA DE IMPRESSÃO (RETORNO AO PNG/HTML2CANVAS) ----------------------
 
-        const printLabels = () => {
+        const printLabels = async () => {
              if (!selectedProduct) {
                  document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
                  return;
              }
              const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-             
              document.getElementById('print-status').className = 'text-sm mt-2 text-gray-600';
-             document.getElementById('print-status').textContent = `Preparando ${quantity} cópia(s) para impressão...`;
+             document.getElementById('print-status').textContent = `Gerando ${quantity} imagem(ns) de etiqueta...`;
 
-             const printContainer = document.getElementById('print-label-wrapper');
+             const printContainer = document.getElementById('print-image-container');
              printContainer.innerHTML = '';
              
-             // 1. Gera N cópias do HTML da etiqueta
-             for (let i = 0; i < quantity; i++) {
-                const uniqueId = `print-copy-${Date.now()}-${i}`;
-                const labelHTML = generateLabelContent(selectedProduct, uniqueId);
-                printContainer.insertAdjacentHTML('beforeend', labelHTML);
-             }
+             // 1. Gerar o elemento da etiqueta no contêiner oculto (apenas um para gerar a imagem)
+             const printId = `print-label-${Date.now()}`;
+             printContainer.innerHTML = generateLabelContent(selectedProduct, printId);
+             
+             // 2. Gerar o código de barras
+             generateBarcode(selectedProduct.EAN, printId);
+             const labelElement = document.getElementById(`label-content-${printId}`);
+             
+             // 3. Gerar a imagem com html2canvas
+             try {
+                // Aumenta a escala para alta resolução para impressão
+                const canvas = await html2canvas(labelElement, { 
+                    scale: 4, // Aumentando a escala para uma resolução ainda melhor
+                    useCORS: true, 
+                    allowTaint: true 
+                });
+                
+                const imageDataURL = canvas.toDataURL('image/png');
+                
+                // 4. Cria o link de download (simulando o envio para o app de impressão)
+                const downloadLink = document.createElement('a');
+                downloadLink.href = imageDataURL;
+                downloadLink.download = `${selectedProduct.EAN}_etiqueta_x${quantity}_100x35mm.png`;
+                
+                document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
+                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para baixar:<br>`;
+                document.getElementById('print-status').appendChild(downloadLink);
+                downloadLink.textContent = 'Baixar Imagem da Etiqueta (PNG)';
+                downloadLink.className = 'text-blue-500 underline text-xs block mt-1';
+                
+                console.log(`✅ Imagem da Etiqueta Gerada (PNG) para impressão externa. Qtd: ${quantity}.`);
 
-             // 2. Garante que todos os códigos de barras sejam gerados ANTES da impressão
-             for (let i = 0; i < quantity; i++) {
-                const uniqueId = `print-copy-${Date.now()}-${i}`;
-                // O EAN é usado apenas no loop do innerHTML
-                generateBarcode(selectedProduct.EAN, `print-copy-${Date.now()}-${i}`); 
+             } catch (error) {
+                 console.error("Erro ao gerar imagem da etiqueta:", error);
+                 document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
+                 document.getElementById('print-status').textContent = `❌ Erro ao gerar a imagem: ${error.message}`;
+             } finally {
+                 // Limpa o contêiner oculto após a geração
+                 printContainer.innerHTML = '';
+                 setTimeout(() => {
+                     document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
+                     document.getElementById('print-status').innerHTML = '';
+                 }, 7000);
              }
-             
-             // 3. Chama a impressão nativa do navegador
-             window.print();
-             
-             // 4. Limpa o wrapper de impressão e atualiza o status após a janela de impressão ser aberta
-             printContainer.innerHTML = '';
-             document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-             document.getElementById('print-status').textContent = `✅ Janela de impressão aberta. Ajuste o tamanho do papel para 100mm x 40mm ou "Etiqueta" no seu navegador.`;
-             setTimeout(() => {
-                 document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
-                 document.getElementById('print-status').innerHTML = '';
-             }, 7000);
         };
         
         // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
