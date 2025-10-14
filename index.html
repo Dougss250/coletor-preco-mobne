@@ -22,10 +22,10 @@
             width: 377px; 
             /* 30mm de altura. */
             height: 113px; 
-            padding: 5px 8px; 
+            padding: 2px 5px; /* Padding reduzido para maximizar o espaço */
             box-sizing: border-box;
             background: white;
-            border: 2px solid #333;
+            border: 1px solid #000; /* Borda fina e reta */
             display: flex;
             flex-direction: column;
             justify-content: space-between; 
@@ -33,55 +33,58 @@
             font-size: 10px;
         }
         
-        /* Preço: Alinhamento e Tamanho para caber ao lado do código de barras */
-        .price-container {
+        /* Preço: Alinhamento e Tamanho em Destaque */
+        .price-row {
+             /* Ocupa o máximo de espaço vertical disponível para o preço dominar */
+             flex-grow: 1; 
              display: flex;
-             align-items: flex-end; 
-             justify-content: flex-end; 
-             height: 100%; 
+             align-items: center; /* Centraliza verticalmente o preço */
+             justify-content: flex-end; /* Alinha o preço à direita */
+             padding-right: 5px; 
         }
         .price-prefix {
-            font-size: 18px; /* R$ */
+            font-size: 40px; /* R$ */
             font-weight: 700;
-            margin-right: 2px;
-            margin-bottom: 5px; /* Alinha o prefixo um pouco acima da base */
+            line-height: 1;
+            align-self: flex-start; /* Alinha o R$ no topo do bloco de preço */
+            margin-top: 10px; /* Ajuste fino */
         }
         .price-display {
-            font-size: 50px; /* Reais */
+            font-size: 100px; /* Reais: MAIOR DE TODOS */
             font-weight: 900;
             line-height: 1;
+            color: #000;
         }
         .price-cents {
-            font-size: 25px; /* Centavos */
+            font-size: 50px; /* Centavos */
             font-weight: 800;
-            vertical-align: top;
             line-height: 1.2;
-            margin-left: 2px;
+            align-self: flex-start; /* Alinha os centavos no topo */
+            margin-top: 10px; /* Ajuste fino */
         }
 
-        /* Container da Linha Inferior (Duas Colunas) */
-        .bottom-row {
+        /* Container do Código de Barras (Linha Inferior) */
+        .barcode-row {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-end; 
-            flex-grow: 1; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+            margin-top: -5px; /* Puxa para cima para economizar espaço */
         }
-
-        /* Código de Barras */
-        .barcode-col {
-             width: 60%; 
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             justify-content: flex-end;
+        .barcode-row svg {
+             width: 85%; 
+             max-width: 300px; 
+             height: 35px; /* Altura ideal para 100mm */
+             margin-bottom: 0px;
         }
-        .barcode-col svg {
-             width: 95%; 
-             max-width: 250px; 
-             height: 45px; /* Altura do código de barras */
+        .barcode-ean-text {
+             font-size: 12px;
+             font-weight: 700;
+             margin-top: -3px;
         }
         
-        /* Estilos do Scanner */
+        /* Estilos do Scanner (Manter) */
         .scanner-modal {
             position: fixed;
             top: 0;
@@ -122,7 +125,7 @@
             projectId: "coletorprecosapp",
             storageBucket: "coletorprecosapp.firebasestorage.app",
             messagingSenderId: "127089195149",
-            appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
+            appId: "1:127089195149:web:3d2c8205cf8fb999999ac4" // (Ajuste se o seu ID mudou)
         };
 
         const INTERNAL_HEADER_MAP = {
@@ -539,30 +542,31 @@
             
             const barcodeSvgId = `barcode-svg-preview`; 
 
-            // 1. Montar o Preview Visível (com layout de duas colunas)
+            // 1. Montar o Preview Visível (com novo layout)
             labelDiv.innerHTML = `
                 <div class="gondola-label" id="label-for-canvas">
-                    <div class="text-center">
-                        <p class="font-extrabold uppercase text-sm leading-tight">${product.Descricao_Reduzida || product.Produto}</p>
-                        <p class="text-xs text-gray-700 font-medium mt-0.5">${product.Embalagem || 'UNIDADE'} | Ref: ${product.Ref_Forn || 'N/A'}</p>
-                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold mt-0.5">Oferta Válida até ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+                    <div class="text-left leading-tight mt-1">
+                        <p class="font-extrabold uppercase text-base text-black">${product.Descricao_Reduzida || product.Produto}</p>
                     </div>
 
-                    <div class="bottom-row">
-                        <div class="barcode-col">
-                            ${isPromo ? `<p class="text-xs text-red-500 line-through">De: R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>` : ''}
-                            <div class="mt-0.5 flex justify-center">
-                                <svg id="${barcodeSvgId}"></svg>
-                            </div>
-                            <p class="text-xs text-gray-700 font-medium mt-0.5">${product.EAN}</p>
-                        </div>
+                    <div class="price-row">
+                        ${isPromo ? `
+                            <p class="text-xs text-red-500 font-semibold absolute top-1/2 left-4 transform -translate-y-1/2">
+                                DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                        ` : ''}
+                        <span class="price-prefix font-bold text-black">R$</span>
+                        <span class="price-display text-black">${reais}</span>
+                        <span class="text-7xl font-extrabold text-black">,</span> 
+                        <span class="price-cents text-black">${centavos}</span>
+                    </div>
 
-                        <div class="w-40 price-container ${isPromo ? 'text-red-700' : 'text-black'}">
-                            <span class="price-prefix font-bold">R$</span>
-                            <span class="price-display">${reais}</span>
-                            <span class="text-4xl font-extrabold">,</span> 
-                            <span class="price-cents">${centavos}</span>
+                    <div class="barcode-row">
+                        <div class="mt-0 flex justify-center w-full">
+                            <svg id="${barcodeSvgId}"></svg>
                         </div>
+                        <p class="barcode-ean-text text-black">${product.EAN} ${product.Embalagem ? ' | ' + product.Embalagem : ''}</p>
+                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold mt-0.5">OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                     </div>
                 </div>
             `;
@@ -572,9 +576,9 @@
                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                     format: format,
-                    displayValue: false, 
+                    displayValue: false, // O EAN é exibido logo abaixo, fora do SVG, para maior controle
                     width: 1.5,
-                    height: 45, 
+                    height: 35, 
                     margin: 0,
                     textMargin: 0
                 });
