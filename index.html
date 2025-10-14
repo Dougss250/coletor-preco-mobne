@@ -46,11 +46,10 @@
 
     .bottom-row {
       display: flex;
-      align-items: flex-end; /* base perfeita */
+      align-items: flex-end;
       justify-content: space-between;
     }
 
-    /* Código de barras */
     .barcode-area {
       width: 62%;
       display: flex;
@@ -77,7 +76,6 @@
       width: 100%;
     }
 
-    /* Preço */
     .price-area {
       width: 38%;
       display: flex;
@@ -133,7 +131,6 @@
       text-align: right;
     }
 
-    /* Modal do Scanner */
     .scanner-modal {
       position: fixed;
       top: 0;
@@ -150,14 +147,12 @@
     .scanner-video {
       max-width: 90vw;
       max-height: 80vh;
-      width: auto;
-      height: auto;
       border: 4px solid #fff;
       box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
     }
   </style>
 
-  <!-- 🔥 Firebase corrigido e rápido -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -220,31 +215,24 @@
     function setupProductListener() {
       if (!db || !userId) return;
       const q = query(collection(db, getProductCollectionPath()));
-      onSnapshot(
-        q,
-        (snap) => {
-          const products = [];
-          snap.forEach((doc) => {
-            const p = doc.data();
-            const searchIndex = [
-              normalizeSearchText(p.EAN),
-              normalizeSearchText(p.Descricao_Reduzida),
-              normalizeSearchText(p.Produto),
-            ].join(" ");
-            products.push({ ...p, search_index: searchIndex });
-          });
-          window.allProducts = products;
-          document.getElementById("status-message").textContent =
-            products.length > 0
-              ? "Busca liberada! Pesquise por EAN ou descrição."
-              : "Nenhum produto em memória. Carregue um arquivo XLSX.";
-          document.getElementById("product-count").textContent = `Produtos Carregados: ${products.length}`;
-        },
-        (error) => {
-          console.error("Erro ao obter snapshot:", error);
-          document.getElementById("status-message").textContent = "Erro ao sincronizar produtos.";
-        }
-      );
+      onSnapshot(q, (snap) => {
+        const products = [];
+        snap.forEach((doc) => {
+          const p = doc.data();
+          const searchIndex = [
+            normalizeSearchText(p.EAN),
+            normalizeSearchText(p.Descricao_Reduzida),
+            normalizeSearchText(p.Produto),
+          ].join(" ");
+          products.push({ ...p, search_index: searchIndex });
+        });
+        window.allProducts = products;
+        document.getElementById("status-message").textContent =
+          products.length > 0
+            ? "Busca liberada! Pesquise por EAN ou descrição."
+            : "Nenhum produto em memória. Carregue um arquivo XLSX.";
+        document.getElementById("product-count").textContent = `Produtos Carregados: ${products.length}`;
+      });
     }
 
     async function processCSV(csvText) {
@@ -296,7 +284,6 @@
     window.uploadDataToFirestore = uploadDataToFirestore;
     window.normalizeSearchText = normalizeSearchText;
     window.initFirebase = initFirebase;
-
     window.onload = () => initFirebase();
   </script>
 </head>
@@ -304,7 +291,7 @@
 <body class="p-4 md:p-8">
   <main class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
     <h1 class="text-3xl font-extrabold text-blue-800 mb-4">
-      <span class="inline-block p-1 bg-blue-100 rounded-lg">🏷️</span> Coletor e Impressão de Etiquetas
+      🏷️ Coletor e Impressão de Etiquetas
     </h1>
     <p id="user-id-display" class="text-xs text-gray-500 mb-4"></p>
     <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando...</p>
@@ -322,11 +309,7 @@
       </h2>
       <div class="flex space-x-2">
         <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Descrição..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-        <button onclick="startBarcodeScanner()" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center shadow-md flex-shrink-0" title="Escanear Código de Barras">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        </button>
       </div>
-      <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1"></p>
       <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3"></div>
     </div>
 
@@ -348,11 +331,33 @@
     </div>
   </main>
 
-  <div id="scanner-modal" class="scanner-modal hidden">
-    <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código</h3>
-    <video id="scanner-video" class="scanner-video" autoplay playsinline></video>
-    <p id="scanner-feedback" class="text-yellow-400 mt-4 text-center"></p>
-    <button onclick="stopBarcodeScanner()" class="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl">Fechar Scanner</button>
-  </div>
+  <script>
+    // === UPLOAD AUTOMÁTICO ===
+    document.getElementById('csv-file-input').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+      document.getElementById('upload-status').textContent = 'Processando...';
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        let text = '';
+        if (isExcel) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          text = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]], { FS: ';' });
+        } else {
+          text = e.target.result;
+        }
+        const products = await window.processCSV(text);
+        if (products.length > 0) {
+          await window.uploadDataToFirestore(products);
+        } else {
+          document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado.';
+        }
+      };
+      if (isExcel) reader.readAsArrayBuffer(file);
+      else reader.readAsText(file);
+    });
+  </script>
 </body>
 </html>
