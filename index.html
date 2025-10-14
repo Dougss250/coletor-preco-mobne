@@ -115,18 +115,16 @@
         /* Preço: DESTAQUE MÁXIMO (ELEMENTOS DO VALOR) */
         .price-wrapper {
             display: flex;
-            /* FIXO: Alinha R$, Reais e Centavos pela BASE, evitando que o preço suma */
-            align-items: flex-end; 
+            /* CORRIGIDO: Alinha R$, Reais e Centavos pela BASE para um alinhamento perfeito. */
+            align-items: baseline; 
             line-height: 1;
-            /* REMOVIDO: Qualquer margem lateral para manter o preço o mais à esquerda possível */
         }
         .price-prefix {
             font-size: 20px; /* R$ */
             font-weight: 700;
             line-height: 1;
             margin-right: 1px; /* REDUZIDO ao mínimo */
-            margin-top: 0;
-            margin-bottom: 2px; /* Micro-ajuste para alinhar com a base dos reais */
+            /* REMOVIDO: O margin-bottom não é mais necessário com align-items: baseline. */
         }
         .price-display {
             font-size: 45px; /* REAIS */
@@ -143,7 +141,6 @@
             font-size: 25px; /* Centavos */
             font-weight: 800;
             line-height: 1.1;
-            /* Sem 'top', sem 'position' para não desalinhamento */
         }
 
         .promo-info {
@@ -655,8 +652,7 @@
                                 <svg id="${barcodeSvgId}"></svg>
                             </div>
                             <p class="ean-text">${product.EAN}</p>
-                            <p class="text-xs text-gray-700 font-medium">${product.Embalagem || 'UNIDADE'}</p>
-                        </div>
+                            </div>
 
                         <div class="price-area">
                             ${isPromo ? `
