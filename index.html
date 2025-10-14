@@ -1,93 +1,102 @@
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Coletor de Preços e Etiquetas Bluetooth</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-            body {
-                font-family: 'Inter', sans-serif;
-                background-color: #f7f7f7;
-            }
-            /* Estilos específicos para a etiqueta de gôndola */
-            .gondola-label {
-                width: 100%;
-                height: auto;
-                min-height: 140px; /* Aumentado para acomodar o código de barras */
-                padding: 8px;
-                box-sizing: border-box;
-                background: white;
-                border: 2px solid #333;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                overflow: hidden;
-                font-size: 10px;
-            }
-            .price-display {
-                font-size: 40px;
-                font-weight: 900;
-                color: #000;
-                line-height: 1;
-            }
-            .price-cents {
-                font-size: 20px;
-                font-weight: 800;
-                vertical-align: top;
-                display: inline-block;
-                margin-top: -10px;
-                /* Ajuste para aproximar o valor do centavo da vírgula */
-                margin-left: 0px; 
-            }
-            .price-prefix {
-                font-size: 16px;
-                font-weight: 600;
-                margin-right: 4px;
-            }
-            /* Estilo para garantir que o SVG do código de barras ocupe o espaço corretamente */
-            .barcode-container svg {
-                 width: 100%; 
-                 height: 100%;
-                 max-height: 40px;
-            }
-    
-            /* Estilos para o Scanner Modal */
-            .scanner-modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.9);
-                z-index: 50;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-            }
-            .scanner-video {
-                max-width: 90vw;
-                max-height: 80vh;
-                width: auto;
-                height: auto;
-                border: 4px solid #fff;
-                box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-            }
-        </style>
-        <script type="module">
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-            import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-            import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-            import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    
-        // [CORREÇÃO CRÍTICA DO FIREBASE]
-        // INSERÇÃO DOS SEUS DADOS REAIS - PROBLEMA "CONFIGURAÇÃO AUSENTE" RESOLVIDO!
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coletor de Preços e Etiquetas Bluetooth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        /* Estilos específicos para a etiqueta de gôndola */
+        .gondola-label {
+            width: 100%;
+            height: auto;
+            min-height: 140px; /* Aumentado para acomodar o código de barras */
+            padding: 8px;
+            box-sizing: border-box;
+            background: white;
+            border: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            font-size: 10px;
+        }
+        .price-display {
+            font-size: 40px;
+            font-weight: 900;
+            color: #000;
+            line-height: 1;
+        }
+        .price-cents {
+            font-size: 20px;
+            font-weight: 800;
+            vertical-align: top;
+            display: inline-block;
+            margin-top: -10px;
+            /* Ajuste para aproximar o valor do centavo da vírgula */
+            margin-left: 0px; 
+        }
+        .price-prefix {
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+        /* Estilo para garantir que o SVG do código de barras ocupe o espaço corretamente */
+        .barcode-container svg {
+             width: 100%; 
+             height: 100%;
+             max-height: 40px;
+        }
+
+        /* Estilos para o Scanner Modal */
+        .scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-video {
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais para o Firebase e dados (agora inicializadas no escopo window)
+        window.db = null;
+        window.auth = null;
+        window.appId = null; // Será preenchido pela config abaixo
+        window.userId = null;
+        window.allProducts = []; // Inicialização explícita
+
+        // =========================================================================
+        // [CORREÇÃO CRÍTICA DO FIREBASE] - BLOCO CORRIGIDO COM SUAS CHAVES REAIS
+        // Este bloco corrige a inicialização e insere suas chaves reais.
         // =========================================================================
         const FIREBASE_CONFIG = {
+            // Chaves da sua imagem (image_d48e39.png) inseridas aqui:
             apiKey: "AIzaSyDqaRqCBh-r2qXCA2A1VMdUpkBvGogurM",
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
@@ -95,14 +104,7 @@
             messagingSenderId: "127089195149",
             appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
         };
-        
-// Variáveis globais para o Firebase e dados (agora inicializadas no escopo window)
-        window.db = null;
-        window.auth = null;
-        window.appId = null; // Será preenchido pela config abaixo
-        window.userId = null;
-        window.allProducts = []; // Inicialização explícita
-        const initialAuthToken = null; 
+
 
         // Mapeamento interno das chaves (tudo em minúsculo e sem caracteres especiais)
         const INTERNAL_HEADER_MAP = {
@@ -117,7 +119,6 @@
             'data': 'Data',
             'qtdeetiquetas': 'Qtde_Etiquetas'
         };
-
 
         /**
          * Função auxiliar para normalizar o texto para fins de busca e mapeamento.
@@ -137,15 +138,15 @@
         };
 
 
-        // Função de inicialização
+        // Função de inicialização CORRIGIDA
         window.initFirebase = async () => {
             try {
-                // Usa o objeto FIREBASE_CONFIG definido acima
+                // Usa o objeto FIREBASE_CONFIG definido acima, corrigindo o erro de variáveis não-existentes.
                 const firebaseConfig = FIREBASE_CONFIG;
                 const initialAuthToken = null;
 
-                // Validação corrigida para garantir que a configuração está presente
-                if (!firebaseConfig || !firebaseConfig.appId) {
+                // Validação para garantir que a configuração está presente
+                if (!firebaseConfig || !firebaseConfig.appId || !firebaseConfig.apiKey) {
                     document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta. Edite o código-fonte (bloco FIREBASE_CONFIG)!';
                     return;
                 }
@@ -161,7 +162,7 @@
                 if (initialAuthToken) {
                     await signInWithCustomToken(window.auth, initialAuthToken);
                 } else {
-                    // Tenta o login anônimo (Habilitado no Passo 3 do guia)
+                    // Tenta o login anônimo (que deve estar habilitado no seu Firebase)
                     await signInAnonymously(window.auth);
                 }
 
@@ -176,16 +177,6 @@
                 document.getElementById('status-message').textContent = `Erro fatal: ${error.message}`;
             }
         };
-
-        // Função para obter o caminho da coleção de produtos
-        window.getProductCollectionPath = () => {
-            return `/artifacts/${window.appId}/users/${window.userId}/produtos`;
-        };
-
-        // O restante do seu código (getProductCollectionPath, setupProductListener, processCSV, uploadDataToFirestore, etc.)
-        // é idêntico ao que você enviou, mas agora ele chama a função initFirebase() que usa
-        // a variável FIREBASE_CONFIG corretamente, corrigindo o erro.
-        // O código continua a partir daqui, como abaixo, garantindo a funcionalidade completa:
 
         // Função para obter o caminho da coleção de produtos
         window.getProductCollectionPath = () => {
@@ -421,9 +412,6 @@
             </p>
             <p class="text-sm text-red-600 mt-2">
                 O código gerado abaixo (**`printLabels()`**) **simula** a etapa de conexão e geração do comando, focando na lógica de negócios e no design da etiqueta.
-            </p>
-            <p class="text-sm text-red-600 mt-2 font-bold">
-                ⚠️ Para a impressão Bluetooth real funcionar, este arquivo DEVE ser hospedado em um ambiente com HTTPS.
             </p>
         </div>
 
@@ -757,7 +745,6 @@
         const connectToPrinter = async () => {
             document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
             // Simulação de conexão. Em um ambiente real, você usaria navigator.bluetooth.requestDevice.
-            // Para testar a API Web Bluetooth, é preciso estar em HTTPS.
             return new Promise(resolve => {
                 setTimeout(() => {
                     document.getElementById('print-status').textContent = 'Simulação de Conexão: Sucesso.';
