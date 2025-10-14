@@ -28,7 +28,6 @@
             font-size: 10px;
             
             /* ESTRUTURA DE GRID: 1. Nome do Produto (8mm), 2. Área Inferior (20mm) */
-            /* Ajustando 113px para 8mm e 20mm. Mantendo a proporção */
             grid-template-rows: 30px 80px; /* 30px p/ Nome (~8mm), 80px p/ Rodapé (~20mm) */
             display: grid;
         }
@@ -43,7 +42,7 @@
             height: 30px; /* Altura exata da linha */
         }
         .product-name {
-            font-size: 16px; /* Aumentado para 16px (14-16px) */
+            font-size: 16px; 
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
@@ -55,47 +54,48 @@
             grid-row: 2;
             display: flex;
             justify-content: space-between;
-            align-items: stretch; /* Garante que as áreas preencham a altura de 20mm */
+            align-items: stretch; 
             height: 80px; /* Altura exata da linha (20mm) */
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (55MM - ESQUERDA) */
+        /* 2.1. CÓDIGO DE BARRAS (55MM -> 65% - ESQUERDA) - ALINHAMENTO À MARGEM */
         .barcode-area {
-            width: 55%; /* 55mm */
+            width: 65%; /* AUMENTADO de 55% para 65% */
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: flex-end; /* Alinha o conteúdo ao final da área vertical */
+            align-items: flex-start; /* NOVO: Alinha o conteúdo à margem esquerda */
+            justify-content: flex-end; 
             padding-top: 2px;
             height: 100%;
             box-sizing: border-box;
+            padding-left: 2px; /* Garante o espaçamento interno do conteúdo */
         }
         .barcode-container svg {
-             width: 95%; /* Maximiza largura dentro da área de 55% */
-             height: 50px; /* Aumentado para melhor visibilidade dentro dos 20mm */
+             width: 95%; 
+             height: 50px; 
         }
         .ean-text {
-            font-size: 11px; /* Levemente maior */
+            font-size: 11px; 
             font-weight: 700;
             line-height: 1;
             margin-top: 1px;
             color: #000;
         }
 
-        /* 2.2. PREÇO (35MM - DIREITA) */
+        /* 2.2. PREÇO (45MM -> 35% - DIREITA) - MOVIDO À ESQUERDA */
         .price-area {
-            width: 45%; /* 35mm */
+            width: 35%; /* REDUZIDO de 45% para 35% (Move o preço para perto do código) */
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Alinhado à direita */
-            justify-content: center; /* CENTRALIZADO VERTICALMENTE (20mm) */
+            align-items: flex-end; /* Mantém o preço alinhado à direita de sua área */
+            justify-content: center; 
             height: 100%;
             padding-right: 2px;
             line-height: 1;
             position: relative;
         }
         
-        /* Preço: DESTAQUE MÁXIMO (Ajustado para 32px) */
+        /* Preço: DESTAQUE MÁXIMO */
         .price-wrapper {
             display: flex;
             align-items: flex-end; /* Alinha Reais e Centavos pela base */
@@ -111,7 +111,7 @@
         .price-display {
             font-size: 55px; /* REAIS: Máximo para caber nos 20mm de altura */
             font-weight: 900;
-            line-height: 0.8; /* Comprime verticalmente */
+            line-height: 0.8; 
             color: #000;
         }
         .price-separator {
@@ -132,7 +132,7 @@
             position: absolute;
             top: 2px; 
             left: 0;
-            font-size: 10px; /* Maior para ser legível */
+            font-size: 10px; 
             font-weight: 700;
             color: red;
             line-height: 1;
@@ -632,12 +632,11 @@
 
                     <div class="bottom-row">
                         <div class="barcode-area">
-                            <div class="mt-0 flex justify-center barcode-container w-full">
+                            <div class="mt-0 barcode-container w-full"> 
                                 <svg id="${barcodeSvgId}"></svg>
                             </div>
                             <p class="ean-text">${product.EAN}</p>
-                            <p class="text-xs text-gray-700 font-medium">${product.Embalagem || 'UNIDADE'}</p>
-                        </div>
+                            </div>
 
                         <div class="price-area">
                             ${isPromo ? `
