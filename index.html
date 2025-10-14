@@ -56,12 +56,12 @@
             align-items: flex-start; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (60% - ESQUERDA) - ALINHANDO À MARGEM */
+        /* 2.1. CÓDIGO DE BARRAS (60% - ESQUERDA) - ALINHAMENTO GARANTIDO */
         .barcode-area {
-            width: 60%; /* Ajustado para 60% */
+            width: 60%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* ALTERADO: Alinha o conteúdo à esquerda */
+            align-items: flex-start; /* FIXO: Alinha o conteúdo (incluindo o SVG e o EAN) à margem esquerda */
             justify-content: flex-end; 
             padding-top: 2px;
             height: 100%;
@@ -77,25 +77,27 @@
             line-height: 1;
             margin-top: 1px;
             color: #000;
+            text-align: left; /* GARANTIA: Força alinhamento do texto EAN à esquerda */
+            width: 100%; /* GARANTIA: Ocupa a largura total para forçar o alinhamento */
         }
 
-        /* 2.2. PREÇO (40% - DIREITA) - MOVIDO PARA MAIS PERTO DO CÓDIGO */
+        /* 2.2. PREÇO (40% - DIREITA) - VISUALIZAÇÃO GARANTIDA */
         .price-area {
-            width: 40%; /* Ajustado para 40% (aproxima o preço do código) */
+            width: 40%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* ALTERADO: Alinha o conteúdo à esquerda de sua área */
+            align-items: flex-start; /* FIXO: Alinha o preço à esquerda de sua área, encostando no código */
             justify-content: center;
             height: 100%;
-            padding-left: 5px; /* Novo espaçamento interno para o preço */
+            padding-left: 5px; 
             line-height: 1;
-            position: relative;
+            position: relative; /* Mantido para posicionar o promo-info */
         }
         
-        /* Preço: DESTAQUE MÁXIMO (Elemento mais destacado) */
+        /* Preço: DESTAQUE MÁXIMO (ELEMENTOS DO VALOR) */
         .price-wrapper {
             display: flex;
-            align-items: flex-end; /* Alterado para alinhar Reais e Centavos PELA BASE */
+            align-items: flex-end; /* FIXO: Alinha Reais e Centavos pela BASE */
             line-height: 1;
         }
         .price-prefix {
@@ -120,22 +122,20 @@
             font-size: 25px; /* Centavos */
             font-weight: 800;
             line-height: 1.1;
-            margin-top: 0; 
-            position: relative;
-            top: 0;
+            /* REMOVIDO: Nenhuma propriedade de posição ou top que possa causar o "desaparecimento" */
         }
 
         .promo-info {
             position: absolute;
             top: 2px; 
-            left: 5px; /* Alinhado à esquerda da área de preço */
+            left: 5px; 
             font-size: 8px;
             font-weight: 700;
             color: red;
             line-height: 1;
             text-decoration: line-through;
             width: calc(100% - 5px);
-            text-align: left; /* Alinhado à esquerda */
+            text-align: left; 
         }
 
 
@@ -652,12 +652,13 @@
             `;
             
             // CHAMADA DA BIBLIOTECA JSBARCODE
+            // displayValue: false é crucial para não ter dois EANs
             if (product.EAN && product.EAN.length === 13) {
                  JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                      format: "EAN13",
                      displayValue: false, 
                      width: 1.5,
-                     height: 40, /* Altura ajustada ao espaço de 20mm */
+                     height: 40, 
                      margin: 0,
                      textMargin: 0
                  });
