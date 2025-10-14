@@ -29,7 +29,6 @@
             border: 1px solid #000; 
             overflow: hidden;
             display: grid;
-            /* AJUSTE CHAVE: 45px para o nome (garantindo 2 linhas e evitando corte), o restante (1fr, que é ~87px) para a área inferior */
             grid-template-rows: 45px 1fr; 
         }
         
@@ -40,22 +39,22 @@
             align-items: center;
             justify-content: center; 
             width: 100%;
-            height: 45px; /* Altura com margem de segurança para 2 linhas */
+            height: 45px; 
             overflow: hidden;
             /* AJUSTE CRUCIAL: Adicionado padding superior para evitar o corte do nome */
             padding: 2px 4px 0 4px; 
         }
         .product-name {
-            font-size: 20px; /* Fonte grande e destacada */
+            font-size: 20px; 
             font-weight: 900;
             text-transform: uppercase;
-            line-height: 1.1; /* Linha única para otimizar espaço */
+            line-height: 1.1; 
             color: #000;
             text-align: center; 
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas */
+            -webkit-line-clamp: 2; 
             -webkit-box-orient: vertical;
         }
 
@@ -63,7 +62,6 @@
         .bottom-row {
             grid-row: 2;
             display: flex;
-            /* AJUSTE CRUCIAL: Centraliza o bloco do código/preço verticalmente na área restante (~87px) */
             align-items: center; 
             /* AJUSTE CRUCIAL: Adicionado padding inferior para evitar corte e desalinhamento do preço */
             padding-bottom: 4px; 
@@ -80,7 +78,7 @@
         }
         .barcode-container {
              width: 95%; 
-             /* AJUSTE DE ALTURA: Reduzido para caber com o novo padding-bottom */
+             /* AJUSTE DE ALTURA */
              height: 40px; 
              display: flex;
              margin-bottom: 2px;
@@ -106,7 +104,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end; 
-            justify-content: center; /* Centraliza verticalmente o preço na sua área */
+            justify-content: center; 
             padding-right: 4px;
             height: 100%;
             position: relative;
@@ -124,7 +122,7 @@
             line-height: 1;
         }
         .price-display {
-            font-size: 55px; /* Reduzido levemente para caber melhor em 35mm */
+            font-size: 55px; 
             font-weight: 900;
             line-height: 0.9; 
             color: #000;
@@ -195,7 +193,7 @@
     </style>
 
     <script type="module">
-        // --- CÓDIGO FIREBASE E LÓGICA DE NEGÓCIOS MANTIDO INTACTO ---
+        // --- CÓDIGO FIREBASE E LÓGICA DE NEGÓCIOS ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -328,6 +326,14 @@
                 await batch.commit();
                 document.getElementById('upload-status').textContent = `Sucesso: ${products.length} produtos importados!`;
                 document.getElementById('search-input').focus();
+                
+                // --- INÍCIO DA MUDANÇA: Impressão automática para 10 ou menos itens ---
+                if (products.length > 0 && products.length <= 10) {
+                    document.getElementById('upload-status').textContent += ' (Gerando etiquetas automaticamente...)';
+                    printBatch(products); 
+                }
+                // --- FIM DA MUDANÇA ---
+
             } catch (error) {
                 document.getElementById('upload-status').textContent = `Erro ao salvar: ${error.message}`;
             }
@@ -375,7 +381,7 @@
                 <div id="print-controls" class="mt-4 hidden">
                     <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
                     <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
-                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Gerar Imagem)</button>
+                    <button onclick="printLabelsManual()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Gerar Imagem)</button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
             </div>
@@ -503,7 +509,7 @@
             }
         };
 
-        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW ----------------------
+        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (MANTIDA) ----------------------
 
         const generateLabelContent = (product, elementId) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
@@ -557,7 +563,6 @@
                      format: ean.length === 13 ? "EAN13" : "CODE128",
                      displayValue: false, 
                      width: 1.8, 
-                     // Altura ajustada para caber no novo layout
                      height: 40, 
                      margin: 0,
                      textMargin: 0
@@ -574,7 +579,6 @@
             const labelDiv = document.getElementById('label-preview');
             const uniqueId = `preview-${Date.now()}`;
             
-            // Define o tamanho do preview para 100x35mm (377px x 132px)
             labelDiv.style.width = '377px';
             labelDiv.style.height = '132px';
 
@@ -646,75 +650,103 @@
             document.getElementById('scanner-video').srcObject = null;
         };
         
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (USANDO DOM-TO-IMAGE) ----------------------
+        // ---------------------- 5. LÓGICA DE IMPRESSÃO (MODIFICADA) ----------------------
 
-        const printLabels = async () => {
-             if (!selectedProduct) {
-                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
-                 return;
-             }
-             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-             document.getElementById('print-status').className = 'text-sm mt-2 text-gray-600';
-             document.getElementById('print-status').textContent = `Gerando ${quantity} imagem(ns) de etiqueta...`;
-
+        // Função principal de geração de imagem de um ÚNICO produto (AGORA RECEBE O PRODUTO)
+        const printSingleProduct = async (product, quantity) => {
              const printContainer = document.getElementById('print-image-container');
-             printContainer.innerHTML = '';
              
-             // 1. Gerar o elemento da etiqueta no contêiner oculto (apenas um para gerar a imagem)
-             const printId = `print-label-${Date.now()}`;
-             printContainer.innerHTML = generateLabelContent(selectedProduct, printId);
+             // Usa o EAN para garantir que cada ID de etiqueta seja único
+             const printId = `print-label-${product.EAN}-${Date.now()}`;
+             printContainer.innerHTML = generateLabelContent(product, printId);
              
-             // 2. Gerar o código de barras
-             generateBarcode(selectedProduct.EAN, printId);
+             generateBarcode(product.EAN, printId);
              const labelElement = document.getElementById(`label-content-${printId}`);
              
-             // 3. Gerar a imagem com dom-to-image
              try {
-                // DOM-TO-IMAGE: Substitui html2canvas com a escala alta para impressão
                 const imageDataURL = await domtoimage.toPng(labelElement, { 
-                    // Define a resolução da imagem final (escala 4x para alta definição)
                     width: 377 * 4, 
                     height: 132 * 4, 
                     style: {
-                        transform: 'scale(4)', // Aplica o zoom/escala
+                        transform: 'scale(4)', 
                         transformOrigin: 'top left',
                         width: '377px', 
                         height: '132px' 
                     }
                 });
                 
-                // 4. Cria o link de download (simulando o envio para o app de impressão)
+                // Cria o link de download (simulando o envio para o app de impressão)
                 const downloadLink = document.createElement('a');
                 downloadLink.href = imageDataURL;
-                downloadLink.download = `${selectedProduct.EAN}_etiqueta_x${quantity}_100x35mm.png`;
+                downloadLink.download = `${product.EAN}_etiqueta_x${quantity}_100x35mm.png`;
                 
-                document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para baixar:<br>`;
-                document.getElementById('print-status').appendChild(downloadLink);
-                downloadLink.textContent = 'Baixar Imagem da Etiqueta (PNG)';
-                downloadLink.className = 'text-blue-500 underline text-xs block mt-1';
-                
-                console.log(`✅ Imagem da Etiqueta Gerada (PNG) para impressão externa. Qtd: ${quantity}.`);
+                // Simula o clique/download (que é o que a impressora Bluetooth faria)
+                downloadLink.click(); 
 
+                return true; // Sucesso
              } catch (error) {
-                 console.error("Erro ao gerar imagem da etiqueta:", error);
-                 document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
-                 document.getElementById('print-status').textContent = `❌ Erro ao gerar a imagem: ${error.message}`;
+                 console.error(`❌ Erro ao gerar imagem para ${product.EAN}:`, error);
+                 return false; // Falha
              } finally {
-                 // Limpa o contêiner oculto após a geração
+                 // Limpa o contêiner após a geração
                  printContainer.innerHTML = '';
-                 setTimeout(() => {
-                     document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
-                     document.getElementById('print-status').innerHTML = '';
-                 }, 7000);
              }
+        };
+        
+        // Novo wrapper para impressão MANUAL (usa o produto selecionado globalmente)
+        const printLabelsManual = async () => {
+             if (!selectedProduct) {
+                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
+                 return;
+             }
+             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
+             document.getElementById('print-status').className = 'text-sm mt-2 text-gray-600';
+             document.getElementById('print-status').textContent = `Gerando ${quantity} imagem(ns) para ${selectedProduct.EAN}...`;
+
+             const success = await printSingleProduct(selectedProduct, quantity);
+             
+             if(success){
+                document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
+                document.getElementById('print-status').textContent = `✅ Imagem gerada com sucesso para ${selectedProduct.EAN}. (Download iniciado)`;
+             } else {
+                 document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
+                 document.getElementById('print-status').textContent = `❌ Erro ao gerar a imagem para ${selectedProduct.EAN}.`;
+             }
+             
+             setTimeout(() => {
+                 document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
+                 document.getElementById('print-status').innerHTML = '';
+             }, 7000);
+        };
+        
+        // NOVO: Função para imprimir um lote sequencialmente
+        const printBatch = async (products) => {
+            const statusElement = document.getElementById('upload-status');
+            let successCount = 0;
+            
+            for (let i = 0; i < products.length; i++) {
+                const product = products[i];
+                const quantity = product.Qtde_Etiquetas || 1;
+                
+                statusElement.textContent = `Imprimindo automaticamente (${i + 1} de ${products.length}): ${product.EAN} (${quantity}x)...`;
+                
+                // Atraso crucial para garantir a renderização completa antes do próximo item
+                await new Promise(resolve => setTimeout(resolve, 500)); 
+                
+                const success = await printSingleProduct(product, quantity);
+                if(success) {
+                    successCount++;
+                }
+            }
+            
+            statusElement.textContent = `Sucesso: ${products.length} produtos importados! ✅ ${successCount} etiquetas geradas.`;
         };
         
         // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
         window.searchProduct = searchProduct;
         window.startBarcodeScanner = startBarcodeScanner;
         window.stopBarcodeScanner = stopBarcodeScanner;
-        window.printLabels = printLabels;
+        window.printLabelsManual = printLabelsManual; // MUDANÇA: Agora é a função manual
         
         // INICIALIZAÇÃO DO FIREBASE AO CARREGAR A PÁGINA
         window.onload = () => {
