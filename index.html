@@ -18,7 +18,7 @@
         
         /* --- ESTILOS DA ETIQUETA 100MM x 35MM (377px x 132px) --- */
         .gondola-label {
-            /* DIMENSÃO: 100MM x 35MM em 96 DPI -> 377px x 132px */
+            /* DIMENSÃO FINAL: 100MM x 35MM em 96 DPI -> 377px x 132px */
             width: 377px; 
             height: 132px; 
             padding: 4px; 
@@ -27,7 +27,7 @@
             border: 1px solid #000; 
             overflow: hidden;
             display: grid;
-            /* AJUSTE: 45px para o nome (garantindo 2 linhas), o restante (1fr, que é ~87px) para a área inferior */
+            /* AJUSTE CHAVE: 45px para o nome (garantindo 2 linhas e evitando corte), o restante (1fr, que é ~87px) para a área inferior */
             grid-template-rows: 45px 1fr; 
         }
         
@@ -46,13 +46,13 @@
             font-size: 20px; /* Fonte grande e destacada */
             font-weight: 900;
             text-transform: uppercase;
-            line-height: 1; /* Linha única para otimizar espaço */
+            line-height: 1.1; /* Linha única para otimizar espaço */
             color: #000;
             text-align: center; 
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas, garantindo que caiba sem cortar */
+            -webkit-line-clamp: 2; /* Limita a 2 linhas */
             -webkit-box-orient: vertical;
         }
 
@@ -77,7 +77,7 @@
         .barcode-container {
              width: 95%; 
              display: flex;
-             height: 45px; /* Reduzindo levemente o barcode para caber melhor na área */
+             height: 45px; /* Altura reduzida para caber no espaço de 87px */
              margin-bottom: 2px;
         }
         .barcode-container svg {
@@ -112,25 +112,25 @@
             line-height: 1;
         }
         .price-prefix {
-            font-size: 22px; /* Reduzido levemente */
+            font-size: 22px; 
             font-weight: 700;
             margin-right: 2px;
             line-height: 1;
         }
         .price-display {
-            font-size: 55px; /* Reduzido levemente */
+            font-size: 55px; /* Reduzido levemente para caber melhor em 35mm */
             font-weight: 900;
             line-height: 0.9; 
             color: #000;
         }
         .price-separator {
-             font-size: 35px; /* Reduzido levemente */
+             font-size: 35px; 
              font-weight: 900;
              line-height: 0.9;
              margin-right: 1px;
         }
         .price-cents {
-            font-size: 30px; /* Reduzido levemente */
+            font-size: 30px; 
             font-weight: 800;
             line-height: 1.1;
         }
