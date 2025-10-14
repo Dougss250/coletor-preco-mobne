@@ -17,7 +17,7 @@
         }
         /* Estilos específicos para a etiqueta de gôndola */
         .gondola-label {
-            /* Dimensões ideais para uma etiqueta de 72mm. Aumentado para melhor qualidade de imagem */
+            /* Dimensões ideais para uma etiqueta de 72mm em preview */
             width: 288px; 
             height: auto;
             min-height: 140px; 
@@ -84,7 +84,6 @@
         }
     </style>
     <script type="module">
-        // Importações e lógica do Firebase (mantidas)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -95,7 +94,11 @@
         window.userId = null;
         window.allProducts = []; 
 
+        // =========================================================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // =========================================================================
         const FIREBASE_CONFIG = {
+            // Chave de API que você forneceu
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE", 
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
@@ -189,7 +192,6 @@
         };
 
         window.processCSV = async (csvText) => {
-            // Lógica de processamento de CSV/XLSX (mantida)
             const cleanText = csvText.replace(/\r/g, '');
             const lines = cleanText.split('\n').filter(line => line.trim() !== '');
             
@@ -259,7 +261,6 @@
         };
 
         window.uploadDataToFirestore = async (products) => {
-            // Lógica de upload para Firestore (mantida)
             if (!window.db) {
                 document.getElementById('upload-status').textContent = 'Erro: Firebase não inicializado.';
                 return;
@@ -329,19 +330,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="p-4 border border-gray-300 rounded-xl bg-gray-50">
-                <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
+                <h3 class="text-lg font-bold text-gray-800 mb-3">3. Produto Selecionado:</h3>
                 <div id="selected-product-details" class="text-sm space-y-1">
                     <p class="text-center text-gray-500">Nenhum produto selecionado.</p>
                 </div>
                 <div id="print-controls" class="mt-4 hidden">
-                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas (Download):</label>
+                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas (Apenas 1 imagem gerada):</label>
                     <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4" disabled/>
                     
                     <p class="text-sm text-gray-500 mb-3 p-2 bg-yellow-100 rounded">
-                        ⚠️ **Atenção:** A impressão será feita via imagem (PNG). Salve e imprima pelo seu aplicativo externo (ex: **Impressora Térmica**).
+                        ⚠️ **Atenção:** A etiqueta será gerada como imagem (PNG). Salve e imprima pelo seu aplicativo externo (ex: **Impressora Térmica**).
                     </p>
 
-                    <button onclick="printLabelsAsImage()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
+                    <button onclick="generateAndDownloadImage()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
                         Gerar e Baixar Imagem PNG
                     </button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
@@ -373,10 +374,9 @@
         let videoStream = null;
         let barcodeInterval = null;
         
-        // ---------------------- Lógica de Upload e Busca (Mantidas) ----------------------
+        // ---------------------- Lógica de Upload (Event Listener) ----------------------
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
-             // ... (lógica mantida)
-             const file = event.target.files[0];
+            const file = event.target.files[0];
             if (!file) return;
             
             const fileName = file.name;
@@ -395,7 +395,6 @@
                         const workbook = XLSX.read(data, { type: 'array' });
                         const sheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[sheetName];
-                        
                         processedText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
                     } catch (error) {
                         document.getElementById('upload-status').textContent = 'Erro ao ler arquivo Excel. Verifique a formatação.';
@@ -423,9 +422,9 @@
             }
         });
 
+        // ---------------------- Lógica de Busca e Seleção ----------------------
 
         const searchProduct = () => {
-            // ... (lógica mantida)
             const rawQuery = document.getElementById('search-input').value;
             const normalizedQuery = window.normalizeSearchText(rawQuery);
 
@@ -466,18 +465,19 @@
         };
 
         const selectProduct = (product) => {
-            // ... (lógica mantida)
-             selectedProduct = product;
-            document.getElementById('search-results').innerHTML = '';
+            selectedProduct = product;
             document.getElementById('search-input').value = product.EAN;
-            document.getElementById('label-qty').value = product.Qtde_Etiquetas || 1;
+            document.getElementById('label-qty').value = 1; // Força 1, já que é uma imagem
+            document.getElementById('search-results').innerHTML = '';
             updateSelectionUI();
         };
 
         const updateSelectionUI = () => {
-            // ... (lógica mantida)
             const detailsDiv = document.getElementById('selected-product-details');
             const printControlsDiv = document.getElementById('print-controls');
+            const printStatusDiv = document.getElementById('print-status');
+            printStatusDiv.className = 'text-xs mt-2 text-red-500';
+            printStatusDiv.textContent = ''; // Limpa o status de impressão anterior
 
             if (selectedProduct) {
                 const isPromo = selectedProduct.Preco_Promocao > 0 && selectedProduct.Preco_Promocao < selectedProduct.Preco_Normal;
@@ -502,7 +502,6 @@
                 document.getElementById('label-preview').innerHTML = '<p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>';
             }
         };
-
 
         // ---------------------- Lógica de Geração da Etiqueta (Preview) ----------------------
 
@@ -577,11 +576,15 @@
 
         if ('BarcodeDetector' in window) {
             try {
+                // Inicializa o detector para os formatos mais comuns de etiquetas
                 barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
+                document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
             } catch (error) {
-                // Ignore initialization error
+                 document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
             }
-        } 
+        } else {
+             document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
+        }
         
         const scanFrame = async () => {
             if (!scannerModal.classList.contains('hidden') && barcodeDetector) {
@@ -600,6 +603,7 @@
                          scannerFeedback.textContent = 'Procurando código de barras...';
                     }
                 } catch (err) {
+                    // console.error(err);
                     scannerFeedback.textContent = 'Erro de detecção. Tente novamente.';
                 }
             }
@@ -626,7 +630,8 @@
                 
                 scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
 
-                scanFrame(); 
+                // Inicia o loop de escaneamento
+                requestAnimationFrame(scanFrame);
 
             } catch (err) {
                 scannerFeedback.textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
@@ -647,22 +652,22 @@
         };
 
 
-        // ---------------------- NOVA LÓGICA DE DOWNLOAD DE IMAGEM ----------------------
+        // ---------------------- LÓGICA DE GERAÇÃO E DOWNLOAD DE IMAGEM ----------------------
         
         /**
          * Transforma o preview da etiqueta em uma imagem PNG e força o download.
          */
-        const printLabelsAsImage = async () => {
+        window.generateAndDownloadImage = async () => {
             if (!selectedProduct) {
                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
                 return;
             }
 
-            const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-            document.getElementById('print-status').textContent = `Gerando ${quantity} imagem(ns) da etiqueta...`;
+            document.getElementById('print-status').textContent = `Gerando imagem da etiqueta...`;
             document.getElementById('print-status').className = 'text-sm mt-2 text-blue-600 font-bold';
 
-            const labelElement = document.getElementById('label-for-canvas');
+            // O elemento a ser convertido em imagem
+            const labelElement = document.getElementById('label-for-canvas'); 
             if (!labelElement) {
                  document.getElementById('print-status').textContent = 'Erro: Elemento de preview não encontrado.';
                  return;
@@ -671,10 +676,10 @@
             try {
                 // 1. Capturar o conteúdo da div em um canvas
                 const canvas = await html2canvas(labelElement, {
-                    scale: 3, // Aumenta a escala para triplicar a resolução (melhor qualidade para impressão)
+                    scale: 3, // Aumenta a escala para 3x (melhor resolução para impressão)
                     logging: false,
                     useCORS: true,
-                    backgroundColor: '#ffffff' // Garante fundo branco
+                    backgroundColor: '#ffffff' 
                 });
 
                 // 2. Converter o canvas para um link de dados (PNG)
@@ -684,16 +689,17 @@
                 const link = document.createElement('a');
                 link.href = imageURI;
                 // Cria um nome de arquivo descritivo
-                const fileName = `Etiqueta-${selectedProduct.EAN}-${selectedProduct.Descricao_Reduzida.substring(0, 15).replace(/\s/g, '_')}.png`;
+                const safeDesc = selectedProduct.Descricao_Reduzida ? selectedProduct.Descricao_Reduzida.substring(0, 15).replace(/\s/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : 'etiqueta';
+                const fileName = `Etiqueta-${selectedProduct.EAN}-${safeDesc}.png`;
                 link.download = fileName; 
 
-                // Adiciona o link ao corpo do documento e simula o clique
+                // Simula o clique para iniciar o download
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ Imagem gerada com sucesso! <br> Abra o arquivo **${fileName}** no seu app de impressão.`;
+                document.getElementById('print-status').innerHTML = `✅ Imagem gerada e baixada! <br> Abra o arquivo **${fileName}** no seu app de impressão.`;
 
             } catch (error) {
                 console.error("Erro ao gerar ou baixar imagem:", error);
@@ -701,10 +707,6 @@
                 document.getElementById('print-status').innerHTML = `❌ Erro na Geração da Imagem: ${error.message}`;
             }
         };
-
-
-        // Renomeia a função para refletir a nova estratégia
-        window.printLabels = printLabelsAsImage;
 
 
         // Inicializa o Firebase ao carregar a página
