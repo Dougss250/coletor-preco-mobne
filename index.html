@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coletor de Preços e Etiquetas - Download Imagem</title>
+    <title>Coletor de Preços e Etiquetas Bluetooth</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -16,85 +15,128 @@
             background-color: #f7f7f7;
         }
         
-        /* ESTILOS DA ETIQUETA 100MM x 30MM (Aproximadamente 377px x 113px) */
+        /* ESTILOS DA ETIQUETA 100MM x 30MM (377px x 113px) */
         .gondola-label {
-            /* 100mm de largura. Ajustado para melhor qualidade de imagem */
+            /* DIMENSÕES EXATAS 100MM X 30MM (em alta DPI) */
             width: 377px; 
-            /* 30mm de altura. */
             height: 113px; 
-            padding: 3px 6px; /* Ajustado para 3px topo/base e 6px laterais */
+            padding: 2px; /* Margem interna de ~2mm */
             box-sizing: border-box;
             background: white;
-            border: 1px solid #000; 
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; 
+            border: 1px solid #000; /* Borda reta e fina */
             overflow: hidden;
             font-size: 10px;
+            
+            /* ESTRUTURA DE GRID: 1. Nome do Produto, 2. Área Inferior */
+            display: grid;
+            grid-template-rows: 25px 84px; /* 25px p/ o Nome (~8mm), 84px p/ o rodapé (~22mm) */
         }
-
-        /* ------------------ SEÇÃO SUPERIOR (PRODUTO) ------------------ */
+        
+        /* ------------------ 1. NOME DO PRODUTO (TOPO) ------------------ */
+        .product-name-area {
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            padding-left: 2px;
+            overflow: hidden;
+        }
         .product-name {
-            font-size: 14px; /* Tamanho bom para 100mm */
+            font-size: 14px; 
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
-            margin-bottom: -5px; /* Puxa o preço para cima */
-        }
-        
-        /* ------------------ SEÇÃO CENTRAL (PREÇO) ------------------ */
-        .price-row {
-             /* Ocupa o máximo de espaço para o preço dominar */
-             flex-grow: 1; 
-             display: flex;
-             align-items: flex-end; /* Alinha o bloco de preço na parte inferior do seu espaço */
-             justify-content: flex-end; 
-             height: 55px; /* Altura controlada para o preço */
-        }
-        
-        .price-prefix {
-            font-size: 35px; /* R$ */
-            font-weight: 700;
-            line-height: 1;
-            align-self: flex-start; /* Alinha o R$ no topo do bloco de preço */
-            margin-top: 5px; /* Ajuste fino */
-        }
-        .price-display {
-            font-size: 85px; /* Reais: MAIOR DE TODOS (Ajustado para caber) */
-            font-weight: 900;
-            line-height: 0.9; /* Altura de linha apertada para não estourar */
             color: #000;
         }
-        .price-cents {
-            font-size: 40px; /* Centavos */
-            font-weight: 800;
-            line-height: 1;
-            align-self: flex-start; /* Alinha os centavos no topo */
-            margin-top: 5px; /* Ajuste fino */
+
+        /* ------------------ 2. ÁREA INFERIOR (CÓDIGO + PREÇO) ------------------ */
+        .bottom-row {
+            grid-row: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; 
         }
 
-        /* ------------------ SEÇÃO INFERIOR (CÓDIGO DE BARRAS) ------------------ */
-        .barcode-row {
+        /* 2.1. CÓDIGO DE BARRAS (55MM - ESQUERDA) */
+        .barcode-area {
+            width: 55%; /* 55mm */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
-            width: 100%;
-            margin-top: -3px; 
+            padding-top: 2px;
+            height: 100%;
         }
-        .barcode-row svg {
-             width: 85%; 
-             max-width: 300px; 
-             height: 30px; /* Altura ideal */
+        .barcode-container svg {
+             width: 95%; /* Maximiza largura dentro da área de 55% */
+             height: 45px; /* Altura ideal para 20mm de espaço vertical */
         }
-        .barcode-ean-text {
-             font-size: 10px; /* Texto do EAN menor e discreto */
-             font-weight: 700;
-             margin-top: 0px; 
-             margin-bottom: 2px;
+        .ean-text {
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            margin-top: 1px;
+            color: #000;
+        }
+
+        /* 2.2. PREÇO (35MM - DIREITA) */
+        .price-area {
+            width: 45%; /* 35mm */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Alinhado à direita */
+            justify-content: center; /* Centralizado verticalmente */
+            height: 100%;
+            padding-right: 2px;
+            line-height: 1;
+            position: relative;
         }
         
-        /* Estilos do Scanner (Manter) */
+        /* Preço: DESTAQUE MÁXIMO (Elemento mais destacado) */
+        .price-wrapper {
+            display: flex;
+            align-items: flex-start; /* Alinha todos os elementos do preço ao topo */
+            line-height: 1;
+        }
+        .price-prefix {
+            font-size: 20px; /* R$ */
+            font-weight: 700;
+            line-height: 1;
+            margin-right: 2px;
+            margin-top: 2px;
+        }
+        .price-display {
+            font-size: 45px; /* REAIS: Máximo para caber nos 30mm de altura total */
+            font-weight: 900;
+            line-height: 0.9; 
+            color: #000;
+        }
+        .price-separator {
+             font-size: 30px;
+             font-weight: 900;
+             line-height: 0.9;
+        }
+        .price-cents {
+            font-size: 25px; /* Centavos */
+            font-weight: 800;
+            line-height: 1.1;
+            margin-top: 2px; /* Alinha com o topo do R$ */
+        }
+
+        .promo-info {
+            position: absolute;
+            top: 2px; 
+            left: 0;
+            font-size: 8px;
+            font-weight: 700;
+            color: red;
+            line-height: 1;
+            text-decoration: line-through;
+            width: 100%;
+            text-align: right;
+        }
+
+
+        /* Estilos do Scanner Modal (Manter) */
         .scanner-modal {
             position: fixed;
             top: 0;
@@ -120,23 +162,24 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDqaRqCBh-r2qXCA2A1VMdUpkBvGogurM",
+            authDomain: "coletorprecosapp.firebaseapp.com",
+            projectId: "coletorprecosapp",
+            storageBucket: "coletorprecosapp.firebasestorage.app",
+            messagingSenderId: "127089195149",
+            appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
+        };
         
         window.db = null;
         window.auth = null;
         window.appId = null; 
         window.userId = null;
         window.allProducts = []; 
-
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE", 
-            authDomain: "coletorprecosapp.firebaseapp.com",
-            projectId: "coletorprecosapp",
-            storageBucket: "coletorprecosapp.firebasestorage.app",
-            messagingSenderId: "127089195149",
-            appId: "1:127089195149:web:3d2c8205cf8fb999999ac4" 
-        };
 
         const INTERNAL_HEADER_MAP = {
             'produto': 'Produto',
@@ -151,6 +194,7 @@
             'qtdeetiquetas': 'Qtde_Etiquetas'
         };
 
+
         window.normalizeSearchText = (text) => {
             if (!text) return '';
             return text.toLowerCase()
@@ -163,23 +207,31 @@
             return window.normalizeSearchText(header); 
         };
 
+
         window.initFirebase = async () => {
             try {
                 const firebaseConfig = FIREBASE_CONFIG;
-                if (!firebaseConfig || !firebaseConfig.appId || !firebaseConfig.apiKey) {
-                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta.';
+
+                if (!firebaseConfig || !firebaseConfig.appId) {
+                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta. Edite o código-fonte (bloco FIREBASE_CONFIG)!';
                     return;
                 }
                 
                 window.appId = firebaseConfig.appId;
+
                 const app = initializeApp(firebaseConfig);
                 window.db = getFirestore(app);
                 window.auth = getAuth(app);
+                setLogLevel('Debug');
+
                 await signInAnonymously(window.auth);
+
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
                 document.getElementById('user-id-display').textContent = `ID do Usuário: ${window.userId}`;
+
                 window.setupProductListener();
                 document.getElementById('status-message').textContent = 'Pronto para carregar dados.'; 
+
             } catch (error) {
                 console.error("Erro na inicialização do Firebase:", error);
                 document.getElementById('status-message').textContent = `Erro fatal: ${error.message}`;
@@ -206,6 +258,7 @@
                         window.normalizeSearchText(productData.Descricao_Reduzida),
                         window.normalizeSearchText(productData.Produto)
                     ].filter(Boolean).join(' ');
+
                     products.push({ ...productData, search_index: searchIndex });
                 });
                 
@@ -216,6 +269,7 @@
                 } else {
                     document.getElementById('status-message').textContent = 'Nenhum produto em memória. Carregue o arquivo XLSX.';
                 }
+
                 document.getElementById('product-count').textContent = `Produtos Carregados: ${products.length}`;
             }, (error) => {
                 console.error("Erro ao obter snapshot de produtos:", error);
@@ -251,7 +305,7 @@
             
             if (!requiredFields.every(field => foundFields.includes(field))) {
                 const missing = requiredFields.filter(field => !foundFields.includes(field));
-                const errorMessage = `Colunas essenciais (${missing.join(', ')}) não encontradas.`;
+                const errorMessage = `Erro de Mapeamento: Colunas essenciais (${missing.join(', ')}) não foram encontradas.`;
                 document.getElementById('upload-status').textContent = `Falha na Leitura: ${errorMessage}`;
                 return [];
             }
@@ -334,7 +388,7 @@
         <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando Firebase...</p>
 
         <div class="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados do CSV/XLSX</h2>
+            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados do CSV/XLSX (Etiquetas a Emitir)</h2>
             <input type="file" id="csv-file-input" accept=".csv, .xls, .xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"/>
             <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo CSV ou **XLSX** para salvar os produtos.</p>
         </div>
@@ -361,20 +415,15 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="p-4 border border-gray-300 rounded-xl bg-gray-50">
-                <h3 class="text-lg font-bold text-gray-800 mb-3">3. Produto Selecionado:</h3>
+                <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
                 <div id="selected-product-details" class="text-sm space-y-1">
                     <p class="text-center text-gray-500">Nenhum produto selecionado.</p>
                 </div>
                 <div id="print-controls" class="mt-4 hidden">
-                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas (Apenas 1 imagem gerada):</label>
-                    <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4" disabled/>
-                    
-                    <p class="text-sm text-gray-500 mb-3 p-2 bg-yellow-100 rounded">
-                        ⚠️ **Atenção:** A etiqueta será gerada como imagem (PNG). Salve e imprima pelo seu aplicativo externo (ex: **Impressora Térmica**).
-                    </p>
-
-                    <button onclick="generateAndDownloadImage()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
-                        Gerar e Baixar Imagem PNG
+                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
+                    <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
+                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
+                        Imprimir Etiquetas (via Bluetooth - Simulado)
                     </button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
@@ -382,12 +431,25 @@
 
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola (100x30mm):</h3>
-
                 <div id="label-preview" class="gondola-label max-w-xs shadow-xl">
                     <p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>
                 </div>
-            </div>
+                </div>
         </div>
+
+        <div class="mt-8 p-4 border border-red-300 bg-red-50 rounded-lg">
+            <h2 class="text-xl font-semibold text-red-700 mb-2">3. Como a Impressão Bluetooth Funcionaria:</h2>
+            <p class="text-sm text-red-600">
+                A conexão com impressoras Bluetooth (e o envio de comandos como **ESC/POS**) é um recurso avançado que **requer permissões de navegador (Web Bluetooth API)** e não pode ser totalmente executado neste ambiente isolado.
+            </p>
+            <p class="text-sm text-red-600 mt-2">
+                O código gerado abaixo (**`printLabels()`**) **simula** a etapa de conexão e geração do comando, focando na lógica de negócios e no design da etiqueta.
+            </p>
+            <p class="text-sm text-red-600 mt-2 font-bold">
+                ⚠️ Para a impressão Bluetooth real funcionar, este arquivo DEVE ser hospedado em um ambiente com HTTPS.
+            </p>
+        </div>
+
     </main>
 
     <div id="scanner-modal" class="scanner-modal hidden">
@@ -405,7 +467,8 @@
         let videoStream = null;
         let barcodeInterval = null;
         
-        // ---------------------- Lógica de Upload (Event Listener) ----------------------
+        // ---------------------- Lógica de Upload (Apenas Event Listener) ----------------------
+
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -426,13 +489,19 @@
                         const workbook = XLSX.read(data, { type: 'array' });
                         const sheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[sheetName];
+                        
                         processedText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
+                        
+                        console.log(`[XLSX Converter] Arquivo Excel convertido para CSV com delimitador ';'.`);
+
                     } catch (error) {
+                        console.error("Erro ao processar arquivo Excel:", error);
                         document.getElementById('upload-status').textContent = 'Erro ao ler arquivo Excel. Verifique a formatação.';
                         return;
                     }
                 } else {
                     processedText = e.target.result;
+                    console.log(`[CSV Reader] Arquivo CSV lido.`);
                 }
                 
                 if (processedText) {
@@ -441,7 +510,7 @@
                     if(products.length > 0) {
                        await window.uploadDataToFirestore(products);
                     } else {
-                       document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado.';
+                       document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado no arquivo (verifique o EAN e os cabeçalhos no console).';
                     }
                 }
             };
@@ -453,7 +522,7 @@
             }
         });
 
-        // ---------------------- Lógica de Busca e Seleção ----------------------
+        // ---------------------- Lógica de Busca e Seleção (Usando o Search Index) ----------------------
 
         const searchProduct = () => {
             const rawQuery = document.getElementById('search-input').value;
@@ -467,7 +536,7 @@
             const productsInCurrentMemory = window.allProducts || []; 
 
             if (productsInCurrentMemory.length === 0) {
-                 resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Lista de produtos vazia. Faça o upload.</p>';
+                 resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Erro: Lista de produtos vazia. Recarregue a página ou faça o upload.</p>';
                  return;
             }
 
@@ -482,7 +551,7 @@
 
 
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado.</p>';
+                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado. Tente pesquisar apenas uma palavra ou EAN exato.</p>';
                 return;
             }
 
@@ -497,18 +566,15 @@
 
         const selectProduct = (product) => {
             selectedProduct = product;
-            document.getElementById('search-input').value = product.EAN;
-            document.getElementById('label-qty').value = 1; 
             document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-input').value = product.EAN;
+            document.getElementById('label-qty').value = product.Qtde_Etiquetas || 1;
             updateSelectionUI();
         };
 
         const updateSelectionUI = () => {
             const detailsDiv = document.getElementById('selected-product-details');
             const printControlsDiv = document.getElementById('print-controls');
-            const printStatusDiv = document.getElementById('print-status');
-            printStatusDiv.className = 'text-xs mt-2 text-red-500';
-            printStatusDiv.textContent = ''; 
 
             if (selectedProduct) {
                 const isPromo = selectedProduct.Preco_Promocao > 0 && selectedProduct.Preco_Promocao < selectedProduct.Preco_Normal;
@@ -534,7 +600,7 @@
             }
         };
 
-        // ---------------------- NOVO LAYOUT DE GERAÇÃO DA ETIQUETA (100x30mm) ----------------------
+        // ---------------------- Lógica de Geração da Etiqueta (Preview) - CORRIGIDA ----------------------
 
         const generateLabelPreview = (product) => {
             const labelDiv = document.getElementById('label-preview');
@@ -545,75 +611,85 @@
             const formattedPrice = new Intl.NumberFormat('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-                useGrouping: false 
+                useGrouping: false
             }).format(finalPrice);
 
             const [reais, centavos] = formattedPrice.split(',');
             
-            const barcodeSvgId = `barcode-svg-preview`; 
+            const barcodeSvgId = `barcode-ean-${product.EAN}-${Date.now()}`; 
 
-            // 1. Montar o Preview Visível (com novo layout)
             labelDiv.innerHTML = `
-                <div class="gondola-label" id="label-for-canvas">
-                    <div class="text-left leading-tight">
-                        <p class="product-name text-black">${product.Descricao_Reduzida || product.Produto}</p>
+                <div class="gondola-label">
+                    <div class="product-name-area">
+                        <p class="product-name">${product.Descricao_Reduzida || product.Produto}</p>
                     </div>
 
-                    <div class="price-row">
-                        ${isPromo ? `
-                            <p class="text-xs text-red-500 font-semibold absolute left-1/4 top-[20px] transform -translate-x-1/2">
-                                DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                        ` : ''}
-                        
-                        <span class="price-prefix font-bold text-black">R$</span>
-                        <span class="price-display text-black">${reais}</span>
-                        <span class="text-5xl font-extrabold text-black line-height-1">,</span> 
-                        <span class="price-cents text-black">${centavos}</span>
-                    </div>
-
-                    <div class="barcode-row">
-                        <div class="mt-0 flex justify-center w-full">
-                            <svg id="${barcodeSvgId}"></svg>
+                    <div class="bottom-row">
+                        <div class="barcode-area">
+                            <div class="mt-0 flex justify-center barcode-container w-full">
+                                <svg id="${barcodeSvgId}"></svg>
+                            </div>
+                            <p class="ean-text">${product.EAN}</p>
+                            <p class="text-xs text-gray-700 font-medium">${product.Embalagem || 'UNIDADE'}</p>
                         </div>
-                        <p class="barcode-ean-text text-black">${product.EAN} ${product.Embalagem ? ' | ' + product.Embalagem : ''}</p>
-                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold leading-none">OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+
+                        <div class="price-area">
+                            ${isPromo ? `
+                                <p class="promo-info">DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            ` : ''}
+                            <div class="price-wrapper">
+                                <span class="price-prefix font-bold text-black">R$</span>
+                                <span class="price-display text-black">${reais}</span>
+                                <span class="price-separator font-extrabold text-black">,</span> 
+                                <span class="price-cents text-black">${centavos}</span>
+                            </div>
+                            ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold leading-none mt-0.5">VÁLIDO ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+                        </div>
                     </div>
                 </div>
             `;
             
-             // 2. Gerar o SVG
-             if (product.EAN) {
-                const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
-                JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                    format: format,
-                    displayValue: false, 
-                    width: 1.5,
-                    height: 30, 
-                    margin: 0,
-                    textMargin: 0
-                });
+            // CHAMADA DA BIBLIOTECA JSBARCODE
+            if (product.EAN && product.EAN.length === 13) {
+                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                     format: "EAN13",
+                     displayValue: false, 
+                     width: 1.5,
+                     height: 40, /* Altura ajustada ao espaço de 20mm */
+                     margin: 0,
+                     textMargin: 0
+                 });
+            } else if (product.EAN) {
+                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                     format: "CODE128",
+                     displayValue: false,
+                     width: 1.5,
+                     height: 40,
+                     margin: 0,
+                     textMargin: 0
+                 });
             }
         };
 
-        // ---------------------- Lógica do Scanner (Mantida) ----------------------
+        // ---------------------- Lógica do Scanner de Código de Barras (Mantida) ----------------------
+        
         const scannerVideo = document.getElementById('scanner-video');
         const scannerModal = document.getElementById('scanner-modal');
         const scannerFeedback = document.getElementById('scanner-feedback');
         let barcodeDetector = null; 
-        let videoStreamTrack = null; 
+        let track = null; 
 
         if ('BarcodeDetector' in window) {
             try {
                 barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
                 document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
             } catch (error) {
-                 document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
+                document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
             }
         } else {
-             document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
+            document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
         }
-        
+
         const scanFrame = async () => {
             if (!scannerModal.classList.contains('hidden') && barcodeDetector) {
                 try {
@@ -647,17 +723,19 @@
             scannerFeedback.textContent = 'Iniciando câmera...';
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment' 
+                    } 
                 });
                 
-                videoStreamTrack = stream.getVideoTracks()[0];
-                scannerVideo.srcObject = stream;
+                track = videoStream.getVideoTracks()[0];
+                scannerVideo.srcObject = videoStream;
                 scannerVideo.play();
                 
                 scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
 
-                requestAnimationFrame(scanFrame);
+                scanFrame(); 
 
             } catch (err) {
                 scannerFeedback.textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
@@ -668,71 +746,86 @@
         window.stopBarcodeScanner = () => {
             scannerModal.classList.add('hidden');
             
-            if (scannerVideo.srcObject) {
-                scannerVideo.srcObject.getTracks().forEach(track => track.stop());
-                scannerVideo.srcObject = null;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
             }
-            if (videoStreamTrack) {
-                videoStreamTrack = null;
+            if (track) {
+                track = null;
             }
+            scannerVideo.srcObject = null;
         };
 
+        // ---------------------- Lógica de Impressão (Simulação) - Mantida ----------------------
 
-        // ---------------------- LÓGICA DE GERAÇÃO E DOWNLOAD DE IMAGEM ----------------------
-        
-        /**
-         * Transforma o preview da etiqueta em uma imagem PNG e força o download.
-         */
-        window.generateAndDownloadImage = async () => {
+        const connectToPrinter = async () => {
+            document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    document.getElementById('print-status').textContent = 'Simulação de Conexão: Sucesso.';
+                    resolve({ name: "Simulação de Impressora Bluetooth", isConnected: true });
+                }, 1000);
+            });
+        };
+
+        const generateEscPosCommands = (product, quantity) => {
+            const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
+            const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
+            const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
+
+            let commands = `
+                // --- INÍCIO DO LOTE DE IMPRESSÃO (QTY: ${quantity}) ---
+                <ESC>@
+                <ESC>a<1>
+                ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
+                ----------
+                <ESC>!C<ESC>-1 
+                R$ ${priceText}
+                <ESC>!<0>
+                ----------
+                EMB: ${product.Embalagem || 'UNIDADE'}
+                ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}` : ''}
+                
+                <GS>k<02><${product.EAN}><00> 
+
+                <CR><LF><CR><LF><CR><LF>
+                <GS>V<0>
+                // --- FIM DA ETIQUETA ---
+            `;
+
+            let fullCommand = '';
+            for (let i = 0; i < quantity; i++) {
+                fullCommand += commands;
+            }
+
+            return fullCommand;
+        };
+
+        const printLabels = async () => {
             if (!selectedProduct) {
                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
                 return;
             }
 
-            document.getElementById('print-status').textContent = `Gerando imagem da etiqueta...`;
-            document.getElementById('print-status').className = 'text-sm mt-2 text-blue-600 font-bold';
+            const quantity = parseInt(document.getElementById('label-qty').value) || 1;
+            document.getElementById('print-status').textContent = 'Preparando etiquetas...';
 
-            const labelElement = document.getElementById('label-for-canvas'); 
-            if (!labelElement) {
-                 document.getElementById('print-status').textContent = 'Erro: Elemento de preview não encontrado.';
-                 return;
-            }
+            const printer = await connectToPrinter();
 
-            try {
-                // 1. Capturar o conteúdo da div em um canvas
-                const canvas = await html2canvas(labelElement, {
-                    scale: 3, // Aumenta a escala para 3x (alta resolução para impressão)
-                    logging: false,
-                    useCORS: true,
-                    backgroundColor: '#ffffff' 
-                });
+            const printCommand = generateEscPosCommands(selectedProduct, quantity);
 
-                // 2. Converter o canvas para um link de dados (PNG)
-                const imageURI = canvas.toDataURL('image/png');
+            console.log("--- COMANDOS ESC/POS GERADOS (SIMULAÇÃO) ---");
+            console.log(printCommand);
+            console.log("---------------------------------------------");
 
-                // 3. Forçar o download da imagem
-                const link = document.createElement('a');
-                link.href = imageURI;
-                const safeDesc = selectedProduct.Descricao_Reduzida ? selectedProduct.Descricao_Reduzida.substring(0, 15).replace(/\s/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : 'etiqueta';
-                const fileName = `Etiqueta-${selectedProduct.EAN}-${safeDesc}.png`;
-                link.download = fileName; 
-
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ Imagem gerada e baixada! <br> Abra o arquivo **${fileName}** no seu app de impressão.`;
-
-            } catch (error) {
-                console.error("Erro ao gerar ou baixar imagem:", error);
-                document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
-                document.getElementById('print-status').innerHTML = `❌ Erro na Geração da Imagem: ${error.message}`;
-            }
+            document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
+            document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas (SIMULADO). Verifique o console.`;
+            setTimeout(() => {
+                document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
+                document.getElementById('print-status').innerHTML = '';
+            }, 5000);
         };
 
-
-        // Inicializa o Firebase ao carregar a página
         window.onload = () => {
             window.initFirebase();
         };
