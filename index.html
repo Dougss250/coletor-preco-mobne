@@ -784,7 +784,7 @@
 
 
         /**
-         * NOVO MÉTODO: Converte a área do código de barras em dados de imagem ESC/POS
+         * Converte a área do código de barras em dados de imagem ESC/POS (Raster Data)
          * @param {number} widthDots - Largura em pontos (72mm = 576 pontos)
          * @param {number} heightDots - Altura em pontos
          * @returns {Uint8Array} Byte array com o comando GS v 0 m e o bitmap
@@ -795,7 +795,7 @@
             
              // 1. Renderiza o HTML (SVG + texto) para um canvas
             const canvas = await html2canvas(container, {
-                scale: 1, // Mantém escala 1:1 para pixels mais precisos
+                scale: 1, 
                 logging: false,
                 useCORS: true,
                 width: widthDots,
@@ -832,7 +832,6 @@
                         bitCount = 0;
                     }
                 }
-                 // Se sobrar bits (o que não deve acontecer se widthDots for múltiplo de 8, mas por segurança)
                 if (bitCount > 0) {
                      bitmapData.push(currentByte);
                 }
@@ -864,7 +863,7 @@
 
         /**
          * FUNÇÃO generateEscPosCommands: Cria os comandos de texto e busca os dados da imagem.
-         * Retorna um objeto com os 3 blocos de bytes.
+         * Retorna um objeto com os 3 blocos de bytes (Header, Imagem, Footer/Corte).
          */
         const generateEscPosCommands = async (product) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
@@ -901,12 +900,12 @@
             
             // --- BLOCO 2: IMAGEM DO CÓDIGO DE BARRAS (É o próprio barcodeImageData) ---
             
-            // --- BLOCO 3: RODAPÉ E CORTE ---
+            // --- BLOCO 3: RODAPÉ E CORTE (COM AVANÇO EXPLÍCITO) ---
             let footerCommands = `
                 <ESC>a1<CR><LF> // Alinha centralizado
                 Cód: ${product.EAN}<CR><LF>
                 
-                <CR><LF><CR><LF><CR><LF> // AVANÇO DE LINHA EXTRA PARA GARANTIR A ETIQUETA INTEIRA
+                <ESC>d5 // COMANDO DE AVANÇO EXPLÍCITO: Avança o papel 5 linhas (para garantir a etiqueta inteira)
                 <GS>V0 // Corta o papel
             `;
             const footerBytes = stringToBytes(footerCommands);
@@ -946,17 +945,17 @@
                 document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde a transferência de dados)...`;
                 
                 for (let i = 0; i < quantity; i++) {
-                    // 1. Enviar o cabeçalho
+                    // 1. Enviar o cabeçalho (Texto Superior)
                     await sendDataToPrinter(characteristic, commandBlocks.header);
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Pequena pausa
+                    await new Promise(resolve => setTimeout(resolve, 150)); // Pausa Aumentada para buffer
 
                     // 2. Enviar a imagem (Bloco grande de dados)
                     await sendDataToPrinter(characteristic, commandBlocks.image);
-                    await new Promise(resolve => setTimeout(resolve, 200)); // Pausa maior após a imagem
+                    await new Promise(resolve => setTimeout(resolve, 300)); // Pausa maior (Crítica) após a imagem
 
-                    // 3. Enviar o rodapé e o corte
+                    // 3. Enviar o rodapé e o corte (Texto Inferior e Comando de Avanço/Corte)
                     await sendDataToPrinter(characteristic, commandBlocks.footer);
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa maior para garantir o corte
+                    await new Promise(resolve => setTimeout(resolve, 600)); // Pausa maior para garantir o corte
                 }
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
