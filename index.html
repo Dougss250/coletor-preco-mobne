@@ -1,363 +1,725 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coletor de Preços e Etiquetas Bluetooth</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coletor de Preços e Etiquetas Bluetooth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
-    body {
-      font-family: "Inter", sans-serif;
-      background-color: #f7f7f7;
-    }
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #f7f7f7;
+    }
 
-    /* === ETIQUETA 100x30mm CORRIGIDA === */
-    .gondola-label {
-      width: 377px;
-      height: 113px;
-      padding: 4px;
-      box-sizing: border-box;
-      background: white;
-      border: 1px solid #000;
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: 25px 1fr;
-    }
+    /* === ETIQUETA 100x30mm CORRIGIDA === */
+    .gondola-label {
+      width: 377px;
+      height: 113px;
+      padding: 4px;
+      box-sizing: border-box;
+      background: white;
+      border: 1px solid #000;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 25px 1fr;
+    }
 
-    .product-name-area {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      width: 100%;
-    }
-    .product-name {
-      font-size: 15px;
-      font-weight: 900;
-      text-transform: uppercase;
-      line-height: 1.1;
-      color: #000;
-      white-space: nowrap;
-    }
+    .product-name-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+    }
+    .product-name {
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: #000;
+      white-space: nowrap;
+    }
 
-    .bottom-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-    }
+    .bottom-row {
+      display: flex;
+      align-items: flex-end; /* base perfeita */
+      justify-content: space-between;
+    }
 
-    .barcode-area {
-      width: 62%;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      padding-left: 4px;
-    }
-    .barcode-container {
-      width: 100%;
-      display: flex;
-      align-items: flex-end;
-    }
-    .barcode-container svg {
-      width: 100%;
-      height: 50px;
-    }
-    .ean-text {
-      font-size: 10px;
-      font-weight: 700;
-      line-height: 1;
-      margin-top: 2px;
-      color: #000;
-      text-align: left;
-      width: 100%;
-    }
+    /* Código de barras */
+    .barcode-area {
+      width: 62%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding-left: 4px;
+    }
+    .barcode-container {
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+    }
+    .barcode-container svg {
+      width: 100%;
+      height: 50px;
+    }
+    .ean-text {
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 2px;
+      color: #000;
+      text-align: left;
+      width: 100%;
+    }
 
-    .price-area {
-      width: 38%;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      padding-right: 4px;
-      position: relative;
-    }
-    .price-wrapper {
-      display: flex;
-      align-items: baseline;
-      line-height: 1;
-    }
-    .price-prefix {
-      font-size: 25px;
-      font-weight: 700;
-      margin-right: 2px;
-    }
-    .price-display {
-      font-size: 60px;
-      font-weight: 900;
-      line-height: 0.9;
-      color: #000;
-    }
-    .price-separator {
-      font-size: 40px;
-      font-weight: 900;
-      line-height: 0.9;
-    }
-    .price-cents {
-      font-size: 35px;
-      font-weight: 800;
-      line-height: 0.8;
-      position: relative;
-      top: 4px;
-    }
+    /* Preço */
+    .price-area {
+      width: 38%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      padding-right: 4px;
+      position: relative;
+    }
+    .price-wrapper {
+      display: flex;
+      align-items: baseline;
+      line-height: 1;
+    }
+    .price-prefix {
+      font-size: 25px;
+      font-weight: 700;
+      margin-right: 2px;
+    }
+    .price-display {
+      font-size: 60px;
+      font-weight: 900;
+      line-height: 0.9;
+      color: #000;
+    }
+    .price-separator {
+      font-size: 40px;
+      font-weight: 900;
+      line-height: 0.9;
+    }
+    .price-cents {
+      font-size: 35px;
+      font-weight: 800;
+      line-height: 0.8;
+      position: relative;
+      top: 4px;
+    }
 
-    .promo-info {
-      position: absolute;
-      top: -10px;
-      right: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      color: red;
-      text-decoration: line-through;
-    }
-    .promo-validity {
-      font-size: 8px;
-      font-weight: 600;
-      margin-top: 2px;
-      color: red;
-      width: 100%;
-      text-align: right;
-    }
+    .promo-info {
+      position: absolute;
+      top: -10px;
+      right: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: red;
+      text-decoration: line-through;
+    }
+    .promo-validity {
+      font-size: 8px;
+      font-weight: 600;
+      margin-top: 2px;
+      color: red;
+      width: 100%;
+      text-align: right;
+    }
 
-    .scanner-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .scanner-video {
-      max-width: 90vw;
-      max-height: 80vh;
-      border: 4px solid #fff;
-      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-    }
-  </style>
+    /* Modal do Scanner */
+    .scanner-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .scanner-video {
+      max-width: 90vw;
+      max-height: 80vh;
+      width: auto;
+      height: auto;
+      border: 4px solid #fff;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    }
+  </style>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
-      authDomain: "coletorprecosapp.firebaseapp.com",
-      projectId: "coletorprecosapp",
-      storageBucket: "coletorprecosapp.firebasestorage.app",
-      messagingSenderId: "127089195149",
-      appId: "1:127089195149:web:3d2c8205cf8fb921124ac4",
-    };
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
+      authDomain: "coletorprecosapp.firebaseapp.com",
+      projectId: "coletorprecosapp",
+      storageBucket: "coletorprecosapp.firebasestorage.app",
+      messagingSenderId: "127089195149",
+      appId: "1:127089195149:web:3d2c8205cf8fb921124ac4",
+    };
 
-    let db, auth, userId;
-    const INTERNAL_HEADER_MAP = {
-      produto: "Produto",
-      descricaoreduzida: "Descricao_Reduzida",
-      ean: "EAN",
-      refforn: "Ref_Forn",
-      embalagem: "Embalagem",
-      preconormal: "Preco_Normal",
-      precopromocao: "Preco_Promocao",
-      promocaoate: "Promocao_ate",
-      data: "Data",
-      qtdeetiquetas: "Qtde_Etiquetas",
-    };
+    let db, auth, userId;
+    window.allProducts = []; // Necessário para a busca
+    const INTERNAL_HEADER_MAP = {
+      produto: "Produto",
+      descricaoreduzida: "Descricao_Reduzida",
+      ean: "EAN",
+      refforn: "Ref_Forn",
+      embalagem: "Embalagem",
+      preconormal: "Preco_Normal",
+      precopromocao: "Preco_Promocao",
+      promocaoate: "Promocao_ate",
+      data: "Data",
+      qtdeetiquetas: "Qtde_Etiquetas",
+    };
 
-    const normalizeSearchText = (text) =>
-      text
-        ? text
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9]/g, "")
-        : "";
+    const normalizeSearchText = (text) =>
+      text
+        ? text
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, "")
+        : "";
 
-    async function initFirebase() {
-      try {
-        const app = initializeApp(FIREBASE_CONFIG);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        setLogLevel("error");
-        const user = await signInAnonymously(auth);
-        userId = user.user.uid;
-        document.getElementById("user-id-display").textContent = `ID do Usuário: ${userId}`;
-        setupProductListener();
-        document.getElementById("status-message").textContent = "Pronto para carregar dados.";
-      } catch (err) {
-        console.error("Erro ao iniciar Firebase:", err);
-        document.getElementById("status-message").textContent = "Erro na inicialização do Firebase.";
-      }
-    }
+    async function initFirebase() {
+      try {
+        const app = initializeApp(FIREBASE_CONFIG);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        setLogLevel("error");
+        const user = await signInAnonymously(auth);
+        userId = user.user.uid;
+        document.getElementById("user-id-display").textContent = `ID do Usuário: ${userId}`;
+        setupProductListener();
+        document.getElementById("status-message").textContent = "Pronto para carregar dados.";
+      } catch (err) {
+        console.error("Erro ao iniciar Firebase:", err);
+        document.getElementById("status-message").textContent = "Erro na inicialização do Firebase.";
+      }
+    }
 
-    function getProductCollectionPath() {
-      return `/artifacts/${FIREBASE_CONFIG.projectId}/users/${userId}/produtos`;
-    }
+    function getProductCollectionPath() {
+      return `/artifacts/${FIREBASE_CONFIG.projectId}/users/${userId}/produtos`;
+    }
 
-    function setupProductListener() {
-      if (!db || !userId) return;
-      const q = query(collection(db, getProductCollectionPath()));
-      onSnapshot(q, (snap) => {
-        const products = [];
-        snap.forEach((doc) => {
-          const p = doc.data();
-          const searchIndex = [
-            normalizeSearchText(p.EAN),
-            normalizeSearchText(p.Descricao_Reduzida),
-            normalizeSearchText(p.Produto),
-          ].join(" ");
-          products.push({ ...p, search_index: searchIndex });
-        });
-        window.allProducts = products;
-        document.getElementById("status-message").textContent =
-          products.length > 0
-            ? "Busca liberada! Pesquise por EAN ou descrição."
-            : "Nenhum produto em memória. Carregue um arquivo XLSX.";
-        document.getElementById("product-count").textContent = `Produtos Carregados: ${products.length}`;
-      });
-    }
+    function setupProductListener() {
+      if (!db || !userId) return;
+      const q = query(collection(db, getProductCollectionPath()));
+      onSnapshot(
+        q,
+        (snap) => {
+          const products = [];
+          snap.forEach((doc) => {
+            const p = doc.data();
+            const searchIndex = [
+              normalizeSearchText(p.EAN),
+              normalizeSearchText(p.Descricao_Reduzida),
+              normalizeSearchText(p.Produto),
+            ].join(" ");
+            products.push({ ...p, search_index: searchIndex });
+          });
+          window.allProducts = products;
+          document.getElementById("status-message").textContent =
+            products.length > 0
+              ? "Busca liberada! Pesquise por EAN ou descrição."
+              : "Nenhum produto em memória. Carregue um arquivo XLSX.";
+          document.getElementById("product-count").textContent = `Produtos Carregados: ${products.length}`;
+        },
+        (error) => {
+          console.error("Erro ao obter snapshot:", error);
+          document.getElementById("status-message").textContent = "Erro ao sincronizar produtos.";
+        }
+      );
+    }
 
-    async function processCSV(csvText) {
-      const lines = csvText.replace(/\r/g, "").split("\n").filter((l) => l.trim() !== "");
-      if (lines.length < 2) return [];
-      const delimiter = lines[0].includes(";") ? ";" : ",";
-      const headers = lines[0].split(delimiter);
-      const headerIndices = {};
-      headers.forEach((raw, i) => {
-        const clean = normalizeSearchText(raw);
-        if (INTERNAL_HEADER_MAP[clean]) headerIndices[i] = INTERNAL_HEADER_MAP[clean];
-      });
+    async function processCSV(csvText) {
+      const lines = csvText.replace(/\r/g, "").split("\n").filter((l) => l.trim() !== "");
+      if (lines.length < 2) return [];
+      const delimiter = lines[0].includes(";") ? ";" : ",";
+      const headers = lines[0].split(delimiter);
+      const headerIndices = {};
+      headers.forEach((raw, i) => {
+        const clean = normalizeSearchText(raw);
+        if (INTERNAL_HEADER_MAP[clean]) headerIndices[i] = INTERNAL_HEADER_MAP[clean];
+      });
 
-      const data = [];
-      for (const line of lines.slice(1)) {
-        if (!line.trim()) continue;
-        const values = line.split(delimiter);
-        const product = {};
-        Object.keys(headerIndices).forEach((index) => {
-          const fieldName = headerIndices[index];
-          const rawValue = (values[index] || "").trim().replace(/^"|"$/g, "");
-          if (fieldName === "EAN") product[fieldName] = rawValue.replace(/\D/g, "");
-          else if (["Preco_Normal", "Preco_Promocao"].includes(fieldName)) product[fieldName] = parseFloat(rawValue.replace(",", ".")) || 0;
-          else if (fieldName === "Qtde_Etiquetas") product[fieldName] = parseInt(rawValue) || 1;
-          else product[fieldName] = rawValue;
-        });
-        if (product.EAN && product.EAN.length >= 8) data.push(product);
-      }
-      return data;
-    }
+      const data = [];
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const values = line.split(delimiter);
+        const product = {};
+        Object.keys(headerIndices).forEach((index) => {
+          const fieldName = headerIndices[index];
+          const rawValue = (values[index] || "").trim().replace(/^"|"$/g, "");
+          if (fieldName === "EAN") product[fieldName] = rawValue.replace(/\D/g, "");
+          else if (["Preco_Normal", "Preco_Promocao"].includes(fieldName)) product[fieldName] = parseFloat(rawValue.replace(",", ".")) || 0;
+          else if (fieldName === "Qtde_Etiquetas") product[fieldName] = parseInt(rawValue) || 1;
+          else product[fieldName] = rawValue;
+        });
+        if (product.EAN && product.EAN.length >= 8) data.push(product);
+      }
+      return data;
+    }
 
-    async function uploadDataToFirestore(products) {
-      if (!db || products.length === 0) return;
-      const batch = writeBatch(db);
-      products.forEach((p) => {
-        if (p.EAN) batch.set(doc(db, getProductCollectionPath(), p.EAN), p);
-      });
-      try {
-        await batch.commit();
-        document.getElementById("upload-status").textContent = `Sucesso: ${products.length} produtos importados!`;
-        document.getElementById("search-input").focus();
-      } catch (err) {
-        console.error(err);
-        document.getElementById("upload-status").textContent = "Erro ao salvar no Firestore.";
-      }
-    }
+    async function uploadDataToFirestore(products) {
+      if (!db || products.length === 0) return;
+      const batch = writeBatch(db);
+      products.forEach((p) => {
+        if (p.EAN) batch.set(doc(db, getProductCollectionPath(), p.EAN), p);
+      });
+      try {
+        await batch.commit();
+        document.getElementById("upload-status").textContent = `Sucesso: ${products.length} produtos importados!`;
+        document.getElementById("search-input").focus();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("upload-status").textContent = "Erro ao salvar no Firestore.";
+      }
+    }
 
-    window.processCSV = processCSV;
-    window.uploadDataToFirestore = uploadDataToFirestore;
-    window.normalizeSearchText = normalizeSearchText;
-    window.initFirebase = initFirebase;
-    window.onload = () => initFirebase();
-  </script>
+    window.processCSV = processCSV;
+    window.uploadDataToFirestore = uploadDataToFirestore;
+    window.normalizeSearchText = normalizeSearchText;
+    window.initFirebase = initFirebase;
+
+    window.onload = () => initFirebase();
+  </script>
 </head>
 
 <body class="p-4 md:p-8">
-  <main class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
-    <h1 class="text-3xl font-extrabold text-blue-800 mb-4">
-      🏷️ Coletor e Impressão de Etiquetas
-    </h1>
-    <p id="user-id-display" class="text-xs text-gray-500 mb-4"></p>
-    <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando...</p>
+  <main class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
+    <h1 class="text-3xl font-extrabold text-blue-800 mb-4">
+      <span class="inline-block p-1 bg-blue-100 rounded-lg">🏷️</span> Coletor e Impressão de Etiquetas
+    </h1>
+    <p id="user-id-display" class="text-xs text-gray-500 mb-4"></p>
+    <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando...</p>
 
-    <div class="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-      <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados (CSV/XLSX)</h2>
-      <input type="file" id="csv-file-input" accept=".csv, .xls, .xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600" />
-      <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo para carregar os produtos.</p>
-    </div>
+    <div class="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+      <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados (CSV/XLSX)</h2>
+      <input type="file" id="csv-file-input" accept=".csv, .xls, .xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600" />
+      <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo para carregar os produtos.</p>
+    </div>
 
-    <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-inner">
-      <h2 class="text-xl font-semibold text-gray-700 mb-3 flex justify-between items-center">
-        <span>2. Coleta e Seleção</span>
-        <span id="product-count" class="text-sm font-normal text-green-600">Produtos Carregados: 0</span>
-      </h2>
-      <div class="flex space-x-2">
-        <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Descrição..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-      </div>
-      <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3"></div>
-    </div>
+    <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-inner">
+      <h2 class="text-xl font-semibold text-gray-700 mb-3 flex justify-between items-center">
+        <span>2. Coleta e Seleção</span>
+        <span id="product-count" class="text-sm font-normal text-green-600">Produtos Carregados: 0</span>
+      </h2>
+      <div class="flex space-x-2">
+        <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Descrição..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+        <button onclick="startBarcodeScanner()" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center shadow-md flex-shrink-0" title="Escanear Código de Barras">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </button>
+      </div>
+      <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1"></p>
+      <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3"><p class="text-sm text-gray-500 p-2">Digite o EAN ou parte da descrição para buscar.</p></div>
+    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="p-4 border border-gray-300 rounded-xl bg-gray-50">
-        <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
-        <div id="selected-product-details" class="text-sm space-y-1"><p class="text-center text-gray-500">Nenhum produto selecionado.</p></div>
-        <div id="print-controls" class="mt-4 hidden">
-          <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
-          <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4" />
-          <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Simulado)</button>
-          <p id="print-status" class="text-xs mt-2 text-red-500"></p>
-        </div>
-      </div>
-      <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
-        <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x30mm):</h3>
-        <div id="label-preview" class="shadow-xl"><p class="text-center text-gray-500 p-8">Selecione um produto</p></div>
-      </div>
-    </div>
-  </main>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="p-4 border border-gray-300 rounded-xl bg-gray-50">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
+        <div id="selected-product-details" class="text-sm space-y-1"><p class="text-center text-gray-500">Nenhum produto selecionado.</p></div>
+        <div id="print-controls" class="mt-4 hidden">
+          <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
+          <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4" />
+          <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Simulado)</button>
+          <p id="print-status" class="text-xs mt-2 text-red-500"></p>
+        </div>
+      </div>
+      <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
+        <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x30mm):</h3>
+        <div id="label-preview" class="shadow-xl"><p class="text-center text-gray-500 p-8">Selecione um produto</p></div>
+      </div>
+    </div>
+  </main>
 
+  <div id="scanner-modal" class="scanner-modal hidden">
+    <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código</h3>
+    <video id="scanner-video" class="scanner-video" autoplay playsinline></video>
+    <p id="scanner-feedback" class="text-yellow-400 mt-4 text-center"></p>
+    <button onclick="stopBarcodeScanner()" class="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl">Fechar Scanner</button>
+  </div>
+  
   <script>
-    // === UPLOAD AUTOMÁTICO ===
+    let selectedProduct = null;
+    let videoStream = null;
+    let barcodeInterval = null;
+    
+    // ---------------------- LÓGICA DE UPLOAD (RESTAUROU O EVENT LISTENER PERDIDO) ----------------------
     document.getElementById('csv-file-input').addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
-      document.getElementById('upload-status').textContent = 'Processando...';
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        let text = '';
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const fileName = file.name;
+        const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+        document.getElementById('upload-status').textContent = 'Processando arquivo...';
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            let processedText = '';
+            
+            if (isExcel) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // Converte para CSV usando ';' como delimitador (padrão em PT-BR)
+                    processedText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
+                    
+                } catch (error) {
+                    document.getElementById('upload-status').textContent = 'Erro ao ler arquivo Excel. Verifique a formatação.';
+                    return;
+                }
+            } else {
+                processedText = e.target.result;
+            }
+            
+            if (processedText) {
+                document.getElementById('upload-status').textContent = 'Processando e salvando dados no Firestore...';
+                const products = await window.processCSV(processedText); 
+                if(products.length > 0) {
+                   await window.uploadDataToFirestore(products);
+                } else {
+                   document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado no arquivo (verifique EAN).';
+                }
+            }
+        };
+        
         if (isExcel) {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          text = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]], { FS: ';' });
+            reader.readAsArrayBuffer(file);
         } else {
-          text = e.target.result;
+            reader.readAsText(file);
         }
-        const products = await window.processCSV(text);
-        if (products.length > 0) {
-          await window.uploadDataToFirestore(products);
-        } else {
-          document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado.';
-        }
-      };
-      if (isExcel) reader.readAsArrayBuffer(file);
-      else reader.readAsText(file);
     });
+
+    // ---------------------- LÓGICA DE BUSCA E SELEÇÃO (RESTAURADA) ----------------------
+
+    const searchProduct = () => {
+        const rawQuery = document.getElementById('search-input').value;
+        const normalizedQuery = window.normalizeSearchText(rawQuery);
+
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = '';
+        selectedProduct = null;
+        updateSelectionUI();
+
+        const productsInCurrentMemory = window.allProducts || []; 
+
+        if (productsInCurrentMemory.length === 0) {
+             resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Erro: Lista de produtos vazia. Recarregue a página ou faça o upload.</p>';
+             return;
+        }
+
+        if (normalizedQuery.length < 1) {
+            resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Digite o EAN ou parte da descrição para buscar.</p>';
+            return;
+        }
+        
+        const filtered = productsInCurrentMemory.filter(p => {
+            return p.search_index && p.search_index.includes(normalizedQuery);
+        }).slice(0, 10); 
+
+
+        if (filtered.length === 0) {
+            resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado. Tente pesquisar apenas uma palavra ou EAN exato.</p>';
+            return;
+        }
+
+        filtered.forEach(p => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'p-2 bg-white hover:bg-blue-100 cursor-pointer rounded-lg border border-gray-200 transition duration-150 shadow-sm';
+            resultItem.innerHTML = `<p class="font-semibold text-sm text-gray-800">${p.Descricao_Reduzida || p.Produto}</p><p class="text-xs text-gray-600">EAN: ${p.EAN}</p>`;
+            resultItem.onclick = () => selectProduct(p);
+            resultsDiv.appendChild(resultItem);
+        });
+    };
+
+    const selectProduct = (product) => {
+        selectedProduct = product;
+        document.getElementById('search-results').innerHTML = '';
+        document.getElementById('search-input').value = product.EAN;
+        document.getElementById('label-qty').value = product.Qtde_Etiquetas || 1;
+        updateSelectionUI();
+    };
+
+    const updateSelectionUI = () => {
+        const detailsDiv = document.getElementById('selected-product-details');
+        const printControlsDiv = document.getElementById('print-controls');
+
+        if (selectedProduct) {
+            const isPromo = selectedProduct.Preco_Promocao > 0 && selectedProduct.Preco_Promocao < selectedProduct.Preco_Normal;
+            const price = isPromo ? selectedProduct.Preco_Promocao : selectedProduct.Preco_Normal;
+            const priceText = price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const promoUntil = selectedProduct.Promocao_ate ? ` (Promoção até: ${selectedProduct.Promocao_ate.substring(0, 10)})` : '';
+            const normalPriceText = selectedProduct.Preco_Normal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+            detailsDiv.innerHTML = `
+                <p><strong>Cód:</strong> ${selectedProduct.EAN}</p>
+                <p><strong>Desc:</strong> ${selectedProduct.Descricao_Reduzida || selectedProduct.Produto}</p>
+                <p><strong>Preço:</strong> <span class="${isPromo ? 'text-red-600 font-bold' : 'text-green-700 font-bold'}">R$ ${priceText}</span>${promoUntil}</p>
+                ${isPromo ? `<p class="text-xs line-through text-gray-500">De: R$ ${normalPriceText}</p>` : ''}
+                <p><strong>Emb.:</strong> ${selectedProduct.Embalagem || 'N/A'}</p>
+                <p><strong>Ref. Forn.:</strong> ${selectedProduct.Ref_Forn || 'N/A'}</p>
+            `;
+            printControlsDiv.classList.remove('hidden');
+            generateLabelPreview(selectedProduct);
+        } else {
+            detailsDiv.innerHTML = '<p class="text-center text-gray-500">Nenhum produto selecionado.</p>';
+            printControlsDiv.classList.add('hidden');
+            document.getElementById('label-preview').innerHTML = '<p class="text-center text-gray-500 p-8">Selecione um produto</p>';
+        }
+    };
+
+    // ---------------------- LÓGICA DE GERAÇÃO DA ETIQUETA (RESTAURADA) ----------------------
+
+    const generateLabelPreview = (product) => {
+        const labelDiv = document.getElementById('label-preview');
+        const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
+        const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
+        const normalPrice = product.Preco_Normal;
+
+        const formattedPrice = new Intl.NumberFormat('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+            useGrouping: false
+        }).format(finalPrice);
+
+        const [reais, centavos] = formattedPrice.split(',');
+        
+        const barcodeSvgId = `barcode-ean-${product.EAN}-${Date.now()}`; 
+
+        labelDiv.innerHTML = `
+            <div class="gondola-label">
+                <div class="product-name-area">
+                    <p class="product-name">${product.Descricao_Reduzida || product.Produto}</p>
+                </div>
+
+                <div class="bottom-row">
+                    <div class="barcode-area">
+                        <div class="mt-0 flex justify-center barcode-container w-full">
+                            <svg id="${barcodeSvgId}"></svg>
+                        </div>
+                        <p class="ean-text">${product.EAN}</p>
+                    </div>
+
+                    <div class="price-area">
+                        ${isPromo ? `
+                            <p class="promo-info">DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        ` : ''}
+                        <div class="price-wrapper">
+                            <span class="price-prefix font-bold text-black">R$</span>
+                            <span class="price-display text-black">${reais}</span>
+                            <span class="price-separator font-extrabold text-black">,</span> 
+                            <span class="price-cents text-black">${centavos}</span>
+                        </div>
+                        ${isPromo && product.Promocao_ate ? `<p class="promo-validity">VÁLIDO ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // CHAMADA DA BIBLIOTECA JSBARCODE
+        if (product.EAN && product.EAN.length === 13) {
+             JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                 format: "EAN13",
+                 displayValue: false, 
+                 width: 1.5,
+                 height: 40,
+                 margin: 0,
+                 textMargin: 0
+             });
+        } else if (product.EAN) {
+             JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                 format: "CODE128",
+                 displayValue: false,
+                 width: 1.5,
+                 height: 40,
+                 margin: 0,
+                 textMargin: 0
+             });
+        }
+    };
+
+    // ---------------------- LÓGICA DO SCANNER (RESTAURADA) ----------------------
+    
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerModal = document.getElementById('scanner-modal');
+    const scannerFeedback = document.getElementById('scanner-feedback');
+    let barcodeDetector = null; 
+    let track = null; 
+
+    if ('BarcodeDetector' in window) {
+        try {
+            barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
+            document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
+        } catch (error) {
+            document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
+        }
+    } else {
+        document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
+    }
+
+    const scanFrame = async () => {
+        if (!scannerModal.classList.contains('hidden') && barcodeDetector) {
+            try {
+                const barcodes = await barcodeDetector.detect(scannerVideo);
+
+                if (barcodes.length > 0) {
+                    const ean = barcodes[0].rawValue;
+                    scannerFeedback.textContent = `Código lido: ${ean}`;
+                    
+                    document.getElementById('search-input').value = ean;
+                    stopBarcodeScanner();
+                    searchProduct(); 
+                    return;
+                } else {
+                     scannerFeedback.textContent = 'Procurando código de barras...';
+                }
+            } catch (err) {
+                scannerFeedback.textContent = 'Erro de detecção. Tente novamente.';
+            }
+        }
+        requestAnimationFrame(scanFrame);
+    };
+
+    window.startBarcodeScanner = async () => {
+        if (!barcodeDetector) {
+            alert('O seu navegador não suporta a função de scanner por câmera (BarcodeDetector API). Use a digitação manual.');
+            return;
+        }
+
+        scannerModal.classList.remove('hidden');
+        scannerFeedback.textContent = 'Iniciando câmera...';
+
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment' 
+                } 
+            });
+            
+            track = videoStream.getVideoTracks()[0];
+            scannerVideo.srcObject = videoStream;
+            scannerVideo.play();
+            
+            scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
+
+            scanFrame(); 
+
+        } catch (err) {
+            scannerFeedback.textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
+            setTimeout(stopBarcodeScanner, 3000); 
+        }
+    };
+
+    window.stopBarcodeScanner = () => {
+        scannerModal.classList.add('hidden');
+        
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+        if (track) {
+            track = null;
+        }
+        scannerVideo.srcObject = null;
+    };
+
+
+    // ---------------------- LÓGICA DE IMPRESSÃO (RESTAURADA) ----------------------
+
+    const connectToPrinter = async () => {
+        document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
+        return new Promise(resolve => {
+            setTimeout(() => {
+                document.getElementById('print-status').textContent = 'Simulação de Conexão: Sucesso.';
+                resolve({ name: "Simulação de Impressora Bluetooth", isConnected: true });
+            }, 1000);
+        });
+    };
+
+    const generateEscPosCommands = (product, quantity) => {
+        const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
+        const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
+        const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
+
+        let commands = `
+            // --- INÍCIO DO LOTE DE IMPRESSÃO (QTY: ${quantity}) ---
+            <ESC>@
+            <ESC>a<1>
+            ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
+            ----------
+            <ESC>!C<ESC>-1 
+            R$ ${priceText}
+            <ESC>!<0>
+            ----------
+            
+            ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}` : ''}
+            
+            <GS>k<02><${product.EAN}><00> 
+
+            <CR><LF><CR><LF><CR><LF>
+            <GS>V<0>
+            // --- FIM DA ETIQUETA ---
+        `;
+
+        let fullCommand = '';
+        for (let i = 0; i < quantity; i++) {
+            fullCommand += commands;
+        }
+
+        return fullCommand;
+    };
+
+    window.printLabels = async () => {
+        if (!selectedProduct) {
+            document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
+            return;
+        }
+
+        const quantity = parseInt(document.getElementById('label-qty').value) || 1;
+        document.getElementById('print-status').textContent = 'Preparando etiquetas...';
+
+        const printer = await connectToPrinter();
+
+        const printCommand = generateEscPosCommands(selectedProduct, quantity);
+
+        console.log("--- COMANDOS ESC/POS GERADOS (SIMULAÇÃO) ---");
+        console.log(printCommand);
+        console.log("---------------------------------------------");
+
+        document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
+        document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas (SIMULADO). Verifique o console.`;
+        setTimeout(() => {
+            document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
+            document.getElementById('print-status').innerHTML = '';
+        }, 5000);
+    };
+
+    // Exportar funções necessárias para o HTML
+    window.searchProduct = searchProduct;
+    window.startBarcodeScanner = startBarcodeScanner;
+    window.stopBarcodeScanner = stopBarcodeScanner;
+    
   </script>
-</body>
+  </body>
 </html>
