@@ -16,19 +16,19 @@
             background-color: #f7f7f7;
         }
         
-        /* --- ESTILOS DA ETIQUETA 100MM x 30MM (377px x 113px) --- */
+        /* --- ESTILOS DA ETIQUETA 100MM x 40MM (377px x 151px) --- */
         .gondola-label {
-            /* 100MM x 30MM em 96 DPI -> 377px x 113px */
+            /* AJUSTE DIMENSÃO: 100MM x 40MM em 96 DPI -> 377px x 151px */
             width: 377px; 
-            height: 113px; 
+            height: 151px; 
             padding: 4px; 
             box-sizing: border-box;
             background: white;
             border: 1px solid #000; 
             overflow: hidden;
             display: grid;
-            /* AJUSTE: 30px para o nome, o restante (1fr) para a área inferior */
-            grid-template-rows: 30px 1fr; 
+            /* AJUSTE: 40px para o nome, o restante (1fr) para a área inferior */
+            grid-template-rows: 40px 1fr; 
         }
         
         /* 1. NOME DO PRODUTO (TOPO - MAIOR E CENTRALIZADO) */
@@ -36,25 +36,25 @@
             grid-row: 1;
             display: flex;
             align-items: center;
-            justify-content: center; /* Centraliza verticalmente o nome na sua área */
+            justify-content: center; 
             width: 100%;
-            height: 30px; 
+            /* AJUSTE: Altura de 40px */
+            height: 40px; 
             overflow: hidden;
-            padding: 0 4px; /* Pequeno padding lateral */
+            padding: 0 4px; 
         }
         .product-name {
-            /* AJUSTE: Fonte maior para destaque */
-            font-size: 17px; 
+            /* AJUSTE: Fonte maior para 20px */
+            font-size: 20px; 
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
             color: #000;
-            /* AJUSTE: Centralização horizontal */
             text-align: center; 
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2; 
+            -webkit-line-clamp: 2; /* Limita a 2 linhas */
             -webkit-box-orient: vertical;
         }
 
@@ -62,25 +62,25 @@
         .bottom-row {
             grid-row: 2;
             display: flex;
-            /* AJUSTE: Coloca o conteúdo (código e preço) na parte inferior da área inferior */
+            /* Garante que o conteúdo (código e preço) fique na parte inferior, como desejado */
             align-items: flex-end; 
-            padding-bottom: 0; /* Garante que não tenha padding na parte inferior */
+            padding-bottom: 0; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (60% da largura - PERFEITO) */
+        /* 2.1. CÓDIGO DE BARRAS (60% da largura) */
         .barcode-area {
             width: 60%; 
             display: flex;
             flex-direction: column;
             align-items: center; 
-            justify-content: flex-end; /* Alinha o bloco do código/EAN na parte inferior */
+            justify-content: flex-end; 
             height: 100%;
         }
         .barcode-container {
              width: 95%; 
              display: flex;
              height: 50px; 
-             margin-top: -5px; /* Puxa o código de barras ligeiramente para cima */
+             margin-bottom: 2px; /* Espaço para o texto EAN */
         }
         .barcode-container svg {
              width: 100%;
@@ -90,19 +90,19 @@
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
-            margin-top: 1px;
+            margin-bottom: 2px; /* Puxa o texto EAN para cima, mais perto da margem inferior */
             color: #000;
             text-align: center; 
             width: 100%;
         }
 
-        /* 2.2. PREÇO (40% da largura - CORRIGIDO) */
+        /* 2.2. PREÇO (40% da largura - CORRIGIDO O ALINHAMENTO) */
         .price-area {
             width: 40%; 
             display: flex;
             flex-direction: column;
             align-items: flex-end; 
-            justify-content: flex-end; /* Alinha o preço na parte inferior */
+            justify-content: flex-end; 
             padding-right: 4px;
             height: 100%;
             position: relative;
@@ -112,8 +112,7 @@
             display: flex;
             align-items: baseline; 
             line-height: 1;
-            /* AJUSTE FINO: Puxa o preço mais para cima, "centralizando-o" visualmente na área inferior */
-            margin-top: -10px; 
+            /* REMOVIDO: O espaço extra permitiu remover o margin negativo */
         }
         .price-prefix {
             font-size: 25px; 
@@ -374,7 +373,7 @@
                 </div>
             </div>
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
-                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x30mm):</h3>
+                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x40mm):</h3>
                 <div id="label-preview" class="shadow-xl"><p class="text-center text-gray-500 p-8">Selecione um produto</p></div>
             </div>
         </div>
@@ -501,7 +500,7 @@
             }
         };
 
-        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (MANTIDA E AJUSTADA) ----------------------
+        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (AJUSTADA PARA 100x40MM) ----------------------
 
         const generateLabelContent = (product, elementId) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
@@ -571,6 +570,10 @@
             const labelDiv = document.getElementById('label-preview');
             const uniqueId = `preview-${Date.now()}`;
             
+            // Define o tamanho do preview para 100x40mm (377px x 151px) para refletir o ajuste
+            labelDiv.style.width = '377px';
+            labelDiv.style.height = '151px';
+
             labelDiv.innerHTML = generateLabelContent(product, uniqueId);
             generateBarcode(product.EAN, uniqueId);
         };
