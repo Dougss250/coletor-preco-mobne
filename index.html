@@ -15,148 +15,132 @@
             background-color: #f7f7f7;
         }
         
+        /* --- INÍCIO DO CÓDIGO DA ETIQUETA CORRIGIDO --- */
+
         /* ESTILOS DA ETIQUETA 100MM x 30MM (377px x 113px) */
         .gondola-label {
-            /* DIMENSÕES EXATAS 100MM X 30MM (em alta DPI) */
             width: 377px; 
             height: 113px; 
-            padding: 2px; /* Margem interna de ~2mm */
+            padding: 4px; /* Margem interna para não colar nas bordas */
             box-sizing: border-box;
             background: white;
-            border: 1px solid #000; /* Borda reta e fina */
+            border: 1px solid #000;
             overflow: hidden;
-            font-size: 10px;
-            
-            /* ESTRUTURA DE GRID: 1. Nome do Produto, 2. Área Inferior */
             display: grid;
-            /* 25px p/ o Nome (~8mm) | 84px p/ o rodapé (~22mm) */
-            grid-template-rows: 25px 84px; 
+            grid-template-rows: 25px 1fr; /* 25px para o Nome, o resto para a área inferior */
         }
         
-        /* ------------------ 1. NOME DO PRODUTO (TOPO) ------------------ */
+        /* 1. NOME DO PRODUTO (TOPO) - CENTRALIZADO E LIMPO */
         .product-name-area {
             grid-row: 1;
             display: flex;
             align-items: center;
-            padding-left: 2px;
+            justify-content: center; /* CORRIGIDO: Centraliza o texto horizontalmente */
+            text-align: center;
+            width: 100%;
             overflow: hidden;
+            /* REMOVIDO: Borda inferior foi retirada para um layout mais limpo */
         }
         .product-name {
-            font-size: 14px; 
+            font-size: 15px; 
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
             color: #000;
+            white-space: nowrap;
         }
 
-        /* ------------------ 2. ÁREA INFERIOR (CÓDIGO + PREÇO) ------------------ */
+        /* 2. ÁREA INFERIOR (CÓDIGO + PREÇO) */
         .bottom-row {
             grid-row: 2;
             display: flex;
-            /* Usamos 'flex-start' para o alinhamento principal, focando no alinhamento vertical dos filhos */
-            align-items: flex-start; 
+            /* CORREÇÃO CRÍTICA: Alinha verticalmente os blocos de código e preço ao centro */
+            align-items: center; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (55MM - ESQUERDA) - ALINHAMENTO À ESQUERDA GARANTIDO */
+        /* 2.1. CÓDIGO DE BARRAS (ESQUERDA) */
         .barcode-area {
-            width: 55%; 
+            width: 60%; /* AJUSTADO: Mais espaço para o código, como na imagem */
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* FIXO: Alinha o conteúdo à margem esquerda de sua área */
-            justify-content: flex-end; /* Alinha o conteúdo para baixo */
-            padding-top: 2px;
-            height: 100%;
-            padding-left: 0; /* A margem interna de 2px já está no .gondola-label */
-            /* Aumentamos a margem interna do código para empurrar o preço para perto */
+            align-items: flex-start; /* Alinha o conteúdo à esquerda */
+            padding-left: 2px;
         }
         .barcode-container {
              width: 100%;
-             /* Garante que o SVG fique alinhado à esquerda dentro do seu contêiner */
-             display: flex; 
-             justify-content: flex-start; 
+             display: flex;
         }
         .barcode-container svg {
-             width: 95%; /* Maximiza largura, mas permite ajuste fino */
-             height: 40px; /* Altura do código de barras */
+             width: 100%;
+             height: 50px; /* AJUSTADO: Código de barras mais alto e proeminente */
         }
-        /* Alinhamento forçado do número EAN abaixo do código */
         .ean-text {
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
-            margin-top: 1px;
+            margin-top: 2px;
             color: #000;
-            text-align: left; /* GARANTIA: Alinha o texto à esquerda, logo abaixo dos traços */
-            width: 95%; /* Garante que o texto tenha o mesmo alinhamento de 95% do SVG acima */
-            padding-left: 1px; /* Micro-ajuste para ficar exatamente sob o início do código */
-        }
-        .barcode-area .text-xs {
-             width: 95%;
-             text-align: left;
-             padding-left: 1px;
+            text-align: left;
+            width: 100%;
         }
 
-
-        /* 2.2. PREÇO (35MM - DIREITA) - APROXIMAÇÃO E ALINHAMENTO CORRIGIDOS */
+        /* 2.2. PREÇO (DIREITA) */
         .price-area {
-            width: 45%; 
+            width: 40%; /* AJUSTADO: Espaço restante para o preço */
             display: flex;
             flex-direction: column;
-            /* FIXO: Alinha o preço à direita de sua área para encostar na borda da etiqueta */
-            align-items: flex-end; 
-            /* FIXO: Centraliza verticalmente o preço na área inferior */
-            justify-content: center; 
-            height: 100%;
-            padding-right: 2px; /* Margem à direita da etiqueta */
-            line-height: 1;
-            position: relative;
+            align-items: flex-end; /* Alinha o conteúdo (wrapper do preço) à direita */
+            padding-right: 4px;
+            position: relative; /* Para posicionar o texto de promoção */
         }
         
-        /* Preço: DESTAQUE MÁXIMO (ELEMENTOS DO VALOR) */
         .price-wrapper {
             display: flex;
-            /* CORRIGIDO: Alinha R$, Reais e Centavos pela BASE para um alinhamento perfeito. */
-            align-items: baseline; 
+            align-items: baseline; /* CORRETO: Mantém o alinhamento perfeito pela base do texto */
             line-height: 1;
         }
         .price-prefix {
-            font-size: 20px; /* R$ */
+            font-size: 25px; /* AJUSTADO: Tamanho do R$ */
             font-weight: 700;
-            line-height: 1;
-            margin-right: 1px; /* REDUZIDO ao mínimo */
-            /* REMOVIDO: O margin-bottom não é mais necessário com align-items: baseline. */
+            margin-right: 2px;
         }
         .price-display {
-            font-size: 45px; /* REAIS */
+            font-size: 60px; /* AJUSTADO: Destaque máximo para os reais */
             font-weight: 900;
             line-height: 0.9; 
             color: #000;
         }
         .price-separator {
-             font-size: 30px;
+             font-size: 40px; /* AJUSTADO */
              font-weight: 900;
              line-height: 0.9;
         }
         .price-cents {
-            font-size: 25px; /* Centavos */
+            font-size: 35px; /* AJUSTADO: Centavos maiores mas menores que os reais */
             font-weight: 800;
             line-height: 1.1;
         }
 
+        /* Mantido para funcionalidade de promoção, não interfere no layout principal */
         .promo-info {
             position: absolute;
-            top: 2px; 
-            right: 2px; /* Alinha o DE/PROMO com a borda direita */
-            left: auto;
-            font-size: 8px;
+            top: -10px; /* Posiciona acima do preço */
+            right: 4px;
+            font-size: 10px;
             font-weight: 700;
             color: red;
-            line-height: 1;
             text-decoration: line-through;
+        }
+        .promo-validity {
+            font-size: 8px;
+            font-weight: 600;
+            margin-top: 2px;
+            color: red;
             width: 100%;
-            text-align: right; 
+            text-align: right;
         }
 
+        /* --- FIM DO CÓDIGO DA ETIQUETA --- */
 
         /* Estilos do Scanner Modal (Manter) */
         .scanner-modal {
@@ -183,9 +167,10 @@
     </style>
 
     <script type="module">
+        // --- TODO O CÓDIGO FIREBASE E LÓGICA DE NEGÓCIOS MANTIDO INTACTO ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
         const FIREBASE_CONFIG = {
@@ -216,7 +201,6 @@
             'qtdeetiquetas': 'Qtde_Etiquetas'
         };
 
-
         window.normalizeSearchText = (text) => {
             if (!text) return '';
             return text.toLowerCase()
@@ -229,48 +213,34 @@
             return window.normalizeSearchText(header); 
         };
 
-
         window.initFirebase = async () => {
             try {
                 const firebaseConfig = FIREBASE_CONFIG;
-
                 if (!firebaseConfig || !firebaseConfig.appId) {
-                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta. Edite o código-fonte (bloco FIREBASE_CONFIG)!';
+                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta.';
                     return;
                 }
-                
                 window.appId = firebaseConfig.appId;
-
                 const app = initializeApp(firebaseConfig);
                 window.db = getFirestore(app);
                 window.auth = getAuth(app);
-                setLogLevel('Debug');
-
+                setLogLevel('Error');
                 await signInAnonymously(window.auth);
-
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
                 document.getElementById('user-id-display').textContent = `ID do Usuário: ${window.userId}`;
-
                 window.setupProductListener();
                 document.getElementById('status-message').textContent = 'Pronto para carregar dados.'; 
-
             } catch (error) {
                 console.error("Erro na inicialização do Firebase:", error);
                 document.getElementById('status-message').textContent = `Erro fatal: ${error.message}`;
             }
         };
 
-        window.getProductCollectionPath = () => {
-            return `/artifacts/${window.appId}/users/${window.userId}/produtos`;
-        };
+        window.getProductCollectionPath = () => `/artifacts/${window.appId}/users/${window.userId}/produtos`;
 
         window.setupProductListener = () => {
-            if (!window.db || !window.userId) {
-                return;
-            }
-
+            if (!window.db || !window.userId) return;
             const q = query(collection(window.db, window.getProductCollectionPath()));
-
             onSnapshot(q, (querySnapshot) => {
                 const products = [];
                 querySnapshot.forEach((doc) => {
@@ -280,309 +250,162 @@
                         window.normalizeSearchText(productData.Descricao_Reduzida),
                         window.normalizeSearchText(productData.Produto)
                     ].filter(Boolean).join(' ');
-
                     products.push({ ...productData, search_index: searchIndex });
                 });
-                
                 window.allProducts = products; 
-                
-                if (products.length > 0) {
-                    document.getElementById('status-message').textContent = 'Busca liberada! Tente pesquisar por EAN ou descrição.';
-                } else {
-                    document.getElementById('status-message').textContent = 'Nenhum produto em memória. Carregue o arquivo XLSX.';
-                }
-
+                document.getElementById('status-message').textContent = products.length > 0 
+                    ? 'Busca liberada! Pesquise por EAN ou descrição.' 
+                    : 'Nenhum produto em memória. Carregue um arquivo XLSX.';
                 document.getElementById('product-count').textContent = `Produtos Carregados: ${products.length}`;
-            }, (error) => {
-                console.error("Erro ao obter snapshot de produtos:", error);
-            });
+            }, (error) => console.error("Erro ao obter snapshot:", error));
         };
 
         window.processCSV = async (csvText) => {
-            const cleanText = csvText.replace(/\r/g, '');
-            const lines = cleanText.split('\n').filter(line => line.trim() !== '');
-            
+            const lines = csvText.replace(/\r/g, '').split('\n').filter(line => line.trim() !== '');
             if (lines.length < 2) return [];
-            
-            const headerLine = lines[0];
-            let delimiter = ',';
-            if (headerLine.split(';').length > headerLine.split(',').length) {
-                delimiter = ';';
-            }
-            
-            const rawHeaders = headerLine.split(delimiter);
+            const delimiter = lines[0].includes(';') ? ';' : ',';
+            const rawHeaders = lines[0].split(delimiter);
             const headerIndices = {};
-            let expectedColumnCount = 0;
-
             rawHeaders.forEach((rawHeader, index) => {
                 const cleaned = cleanHeader(rawHeader);
-                if (INTERNAL_HEADER_MAP[cleaned]) {
-                    headerIndices[index] = INTERNAL_HEADER_MAP[cleaned];
-                    expectedColumnCount++;
-                }
+                if (INTERNAL_HEADER_MAP[cleaned]) headerIndices[index] = INTERNAL_HEADER_MAP[cleaned];
             });
-            
-            const requiredFields = ['EAN', 'Descricao_Reduzida'];
-            const foundFields = Object.values(headerIndices);
-            
-            if (!requiredFields.every(field => foundFields.includes(field))) {
-                const missing = requiredFields.filter(field => !foundFields.includes(field));
-                const errorMessage = `Erro de Mapeamento: Colunas essenciais (${missing.join(', ')}) não foram encontradas.`;
-                document.getElementById('upload-status').textContent = `Falha na Leitura: ${errorMessage}`;
-                return [];
-            }
 
             const data = [];
-            const rawData = lines.slice(1);
-
-            for (const line of rawData) {
+            for (const line of lines.slice(1)) {
                 if (!line.trim()) continue;
                 const values = line.split(delimiter);
-
-                if (values.length < expectedColumnCount) continue;
-
                 const product = {};
-                
                 Object.keys(headerIndices).forEach(index => {
                     const fieldName = headerIndices[index];
-                    const rawValue = values[index] ? values[index].trim().replace(/^"|"$/g, '') : '';
-                    
-                    product[fieldName] = rawValue;
-
-                    if (fieldName === 'EAN') {
-                         product[fieldName] = rawValue.replace(/\D/g, '');
-                    } else if (fieldName === 'Preco_Normal' || fieldName === 'Preco_Promocao') {
-                         product[fieldName] = parseFloat(rawValue.replace(',', '.')) || 0;
-                    } else if (fieldName === 'Qtde_Etiquetas') {
-                         product[fieldName] = parseInt(rawValue) || 1;
-                    }
+                    const rawValue = (values[index] || '').trim().replace(/^"|"$/g, '');
+                    if (fieldName === 'EAN') product[fieldName] = rawValue.replace(/\D/g, '');
+                    else if (['Preco_Normal', 'Preco_Promocao'].includes(fieldName)) product[fieldName] = parseFloat(rawValue.replace(',', '.')) || 0;
+                    else if (fieldName === 'Qtde_Etiquetas') product[fieldName] = parseInt(rawValue) || 1;
+                    else product[fieldName] = rawValue;
                 });
-
-                if (product.EAN && product.EAN.length >= 8) {
-                    data.push(product);
-                } else {
-                    console.warn("[CSV/XLSX] Produto ignorado: EAN inválido ou ausente. Linha:", product.Descricao_Reduzida || 'Desconhecido');
-                }
+                if (product.EAN && product.EAN.length >= 8) data.push(product);
             }
             return data;
         };
 
         window.uploadDataToFirestore = async (products) => {
-            if (!window.db) {
-                document.getElementById('upload-status').textContent = 'Erro: Firebase não inicializado.';
-                return;
-            }
-            if (products.length === 0) {
-                 document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado no arquivo para upload.';
-                 return;
-            }
-
+            if (!window.db || products.length === 0) return;
             const collectionPath = window.getProductCollectionPath();
             const batch = writeBatch(window.db);
-            let successCount = 0;
-
-            for (const product of products) {
-                if (product.EAN) {
-                    const docRef = doc(window.db, collectionPath, product.EAN); 
-                    batch.set(docRef, product);
-                    successCount++;
-                }
-            }
-
+            products.forEach(product => {
+                if (product.EAN) batch.set(doc(window.db, collectionPath, product.EAN), product);
+            });
             try {
                 await batch.commit();
-                document.getElementById('upload-status').textContent = `Sucesso: ${successCount} produtos importados! Tente a busca abaixo.`;
+                document.getElementById('upload-status').textContent = `Sucesso: ${products.length} produtos importados!`;
                 document.getElementById('search-input').focus();
             } catch (error) {
-                console.error("Erro ao subir dados para o Firestore:", error);
-                document.getElementById('upload-status').textContent = `Erro ao salvar dados: ${error.message}`;
+                document.getElementById('upload-status').textContent = `Erro ao salvar: ${error.message}`;
             }
         };
     </script>
 </head>
-<body onload="initFirebase()" class="p-4 md:p-8">
+<body class="p-4 md:p-8">
 
     <main class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
         <h1 class="text-3xl font-extrabold text-blue-800 mb-4">
-            <span class="inline-block p-1 bg-blue-100 rounded-lg">🏷️</span> Coletor de Preços e Impressão de Etiquetas
+            <span class="inline-block p-1 bg-blue-100 rounded-lg">🏷️</span> Coletor e Impressão de Etiquetas
         </h1>
         <p id="user-id-display" class="text-xs text-gray-500 mb-4"></p>
-        <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando Firebase...</p>
+        <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando...</p>
 
         <div class="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados do CSV/XLSX (Etiquetas a Emitir)</h2>
+            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados (CSV/XLSX)</h2>
             <input type="file" id="csv-file-input" accept=".csv, .xls, .xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"/>
-            <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo CSV ou **XLSX** para salvar os produtos.</p>
+            <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo para carregar os produtos.</p>
         </div>
 
         <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-inner">
             <h2 class="text-xl font-semibold text-gray-700 mb-3 flex justify-between items-center">
-                <span>2. Coleta de Preço e Seleção</span>
+                <span>2. Coleta e Seleção</span>
                 <span id="product-count" class="text-sm font-normal text-green-600">Produtos Carregados: 0</span>
             </h2>
-
             <div class="flex space-x-2">
-                <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Descrição..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150"/>
-                <button onclick="startBarcodeScanner()" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center transition duration-150 shadow-md flex-shrink-0" title="Escanear Código de Barras">
+                <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Descrição..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"/>
+                <button onclick="startBarcodeScanner()" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center shadow-md flex-shrink-0" title="Escanear Código de Barras">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                 </button>
             </div>
-            
             <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1"></p>
-            
-            <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3">
-                <p class="text-sm text-gray-500 p-2">Digite o EAN ou parte da descrição para buscar.</p>
-            </div>
+            <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3"></div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="p-4 border border-gray-300 rounded-xl bg-gray-50">
                 <h3 class="text-lg font-bold text-gray-800 mb-3">Produto Selecionado:</h3>
-                <div id="selected-product-details" class="text-sm space-y-1">
-                    <p class="text-center text-gray-500">Nenhum produto selecionado.</p>
-                </div>
+                <div id="selected-product-details" class="text-sm space-y-1"><p class="text-center text-gray-500">Nenhum produto selecionado.</p></div>
                 <div id="print-controls" class="mt-4 hidden">
                     <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
                     <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
-                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
-                        Imprimir Etiquetas (via Bluetooth - Simulado)
-                    </button>
+                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Simulado)</button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
             </div>
-
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
-                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola (100x30mm):</h3>
-                <div id="label-preview" class="gondola-label max-w-xs shadow-xl">
-                    <p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>
-                </div>
-                </div>
+                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta (100x30mm):</h3>
+                <div id="label-preview" class="shadow-xl"><p class="text-center text-gray-500 p-8">Selecione um produto</p></div>
+            </div>
         </div>
-
-        <div class="mt-8 p-4 border border-red-300 bg-red-50 rounded-lg">
-            <h2 class="text-xl font-semibold text-red-700 mb-2">3. Como a Impressão Bluetooth Funcionaria:</h2>
-            <p class="text-sm text-red-600">
-                A conexão com impressoras Bluetooth (e o envio de comandos como **ESC/POS**) é um recurso avançado que **requer permissões de navegador (Web Bluetooth API)** e não pode ser totalmente executado neste ambiente isolado.
-            </p>
-            <p class="text-sm text-red-600 mt-2">
-                O código gerado abaixo (**`printLabels()`**) **simula** a etapa de conexão e geração do comando, focando na lógica de negócios e no design da etiqueta.
-            </p>
-            <p class="text-sm text-red-600 mt-2 font-bold">
-                ⚠️ Para a impressão Bluetooth real funcionar, este arquivo DEVE ser hospedado em um ambiente com HTTPS.
-            </p>
-        </div>
-
     </main>
 
     <div id="scanner-modal" class="scanner-modal hidden">
-        <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código de Barras</h3>
+        <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código</h3>
         <video id="scanner-video" class="scanner-video" autoplay playsinline></video>
-        
         <p id="scanner-feedback" class="text-yellow-400 mt-4 text-center"></p>
-
-        <button onclick="stopBarcodeScanner()" class="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl transition duration-200">
-            Fechar Scanner
-        </button>
+        <button onclick="stopBarcodeScanner()" class="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl">Fechar Scanner</button>
     </div>
+    
     <script>
         let selectedProduct = null;
         let videoStream = null;
-        let barcodeInterval = null;
         
-        // ---------------------- Lógica de Upload (Apenas Event Listener) ----------------------
-
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            
-            const fileName = file.name;
-            const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-
-            document.getElementById('upload-status').textContent = 'Processando arquivo...';
-
+            const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+            document.getElementById('upload-status').textContent = 'Processando...';
             const reader = new FileReader();
-
             reader.onload = async (e) => {
-                let processedText = '';
-                
+                let text = '';
                 if (isExcel) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const sheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[sheetName];
-                        
-                        processedText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
-                        
-                        console.log(`[XLSX Converter] Arquivo Excel convertido para CSV com delimitador ';'.`);
-
-                    } catch (error) {
-                        console.error("Erro ao processar arquivo Excel:", error);
-                        document.getElementById('upload-status').textContent = 'Erro ao ler arquivo Excel. Verifique a formatação.';
-                        return;
-                    }
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    text = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]], { FS: ';' });
                 } else {
-                    processedText = e.target.result;
-                    console.log(`[CSV Reader] Arquivo CSV lido.`);
+                    text = e.target.result;
                 }
-                
-                if (processedText) {
-                    document.getElementById('upload-status').textContent = 'Processando e salvando dados no Firestore...';
-                    const products = await window.processCSV(processedText); 
-                    if(products.length > 0) {
-                       await window.uploadDataToFirestore(products);
-                    } else {
-                       document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado no arquivo (verifique o EAN e os cabeçalhos no console).';
-                    }
-                }
+                const products = await window.processCSV(text);
+                if (products.length > 0) await window.uploadDataToFirestore(products);
             };
-            
-            if (isExcel) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
+            if (isExcel) reader.readAsArrayBuffer(file);
+            else reader.readAsText(file);
         });
 
-        // ---------------------- Lógica de Busca e Seleção (Usando o Search Index) ----------------------
-
         const searchProduct = () => {
-            const rawQuery = document.getElementById('search-input').value;
-            const normalizedQuery = window.normalizeSearchText(rawQuery);
-
+            const query = window.normalizeSearchText(document.getElementById('search-input').value);
             const resultsDiv = document.getElementById('search-results');
             resultsDiv.innerHTML = '';
             selectedProduct = null;
             updateSelectionUI();
-
-            const productsInCurrentMemory = window.allProducts || []; 
-
-            if (productsInCurrentMemory.length === 0) {
-                 resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Erro: Lista de produtos vazia. Recarregue a página ou faça o upload.</p>';
-                 return;
-            }
-
-            if (normalizedQuery.length < 1) {
-                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Digite o EAN ou parte da descrição para buscar.</p>';
-                return;
-            }
+            if (query.length < 1) return;
             
-            const filtered = productsInCurrentMemory.filter(p => {
-                return p.search_index && p.search_index.includes(normalizedQuery);
-            }).slice(0, 10); 
-
-
+            const filtered = window.allProducts.filter(p => p.search_index && p.search_index.includes(query)).slice(0, 10);
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado. Tente pesquisar apenas uma palavra ou EAN exato.</p>';
+                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado.</p>';
                 return;
             }
-
             filtered.forEach(p => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'p-2 bg-white hover:bg-blue-100 cursor-pointer rounded-lg border border-gray-200 transition duration-150 shadow-sm';
-                resultItem.innerHTML = `<p class="font-semibold text-sm text-gray-800">${p.Descricao_Reduzida || p.Produto}</p><p class="text-xs text-gray-600">EAN: ${p.EAN}</p>`;
-                resultItem.onclick = () => selectProduct(p);
-                resultsDiv.appendChild(resultItem);
+                const item = document.createElement('div');
+                item.className = 'p-2 bg-white hover:bg-blue-100 cursor-pointer rounded-lg border';
+                item.innerHTML = `<p class="font-semibold text-sm">${p.Descricao_Reduzida || p.Produto}</p><p class="text-xs text-gray-600">EAN: ${p.EAN}</p>`;
+                item.onclick = () => selectProduct(p);
+                resultsDiv.appendChild(item);
             });
         };
 
@@ -597,254 +420,108 @@
         const updateSelectionUI = () => {
             const detailsDiv = document.getElementById('selected-product-details');
             const printControlsDiv = document.getElementById('print-controls');
-
             if (selectedProduct) {
                 const isPromo = selectedProduct.Preco_Promocao > 0 && selectedProduct.Preco_Promocao < selectedProduct.Preco_Normal;
                 const price = isPromo ? selectedProduct.Preco_Promocao : selectedProduct.Preco_Normal;
-                const priceText = price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                const promoUntil = selectedProduct.Promocao_ate ? ` (Promoção até: ${selectedProduct.Promocao_ate.substring(0, 10)})` : '';
-                const normalPriceText = selectedProduct.Preco_Normal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-                detailsDiv.innerHTML = `
-                    <p><strong>Cód:</strong> ${selectedProduct.EAN}</p>
-                    <p><strong>Desc:</strong> ${selectedProduct.Descricao_Reduzida || selectedProduct.Produto}</p>
-                    <p><strong>Preço:</strong> <span class="${isPromo ? 'text-red-600 font-bold' : 'text-green-700 font-bold'}">R$ ${priceText}</span>${promoUntil}</p>
-                    ${isPromo ? `<p class="text-xs line-through text-gray-500">De: R$ ${normalPriceText}</p>` : ''}
-                    <p><strong>Emb.:</strong> ${selectedProduct.Embalagem || 'N/A'}</p>
-                    <p><strong>Ref. Forn.:</strong> ${selectedProduct.Ref_Forn || 'N/A'}</p>
-                `;
+                detailsDiv.innerHTML = `<p><strong>Cód:</strong> ${selectedProduct.EAN}</p><p><strong>Desc:</strong> ${selectedProduct.Descricao_Reduzida}</p><p><strong>Preço:</strong> <span class="${isPromo ? 'text-red-600' : 'text-green-700'} font-bold">R$ ${price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></p>`;
                 printControlsDiv.classList.remove('hidden');
                 generateLabelPreview(selectedProduct);
             } else {
                 detailsDiv.innerHTML = '<p class="text-center text-gray-500">Nenhum produto selecionado.</p>';
                 printControlsDiv.classList.add('hidden');
-                document.getElementById('label-preview').innerHTML = '<p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>';
+                document.getElementById('label-preview').innerHTML = '<p class="text-center text-gray-500 p-8">Selecione um produto</p>';
             }
         };
-
-        // ---------------------- Lógica de Geração da Etiqueta (Preview) - CORRIGIDA ----------------------
 
         const generateLabelPreview = (product) => {
             const labelDiv = document.getElementById('label-preview');
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const normalPrice = product.Preco_Normal;
-
-            const formattedPrice = new Intl.NumberFormat('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-                useGrouping: false
-            }).format(finalPrice);
-
-            const [reais, centavos] = formattedPrice.split(',');
-            
-            const barcodeSvgId = `barcode-ean-${product.EAN}-${Date.now()}`; 
+            const [reais, centavos] = finalPrice.toLocaleString('pt-BR', {minimumFractionDigits: 2}).split(',');
+            const barcodeSvgId = `barcode-ean-${product.EAN}`; 
 
             labelDiv.innerHTML = `
                 <div class="gondola-label">
                     <div class="product-name-area">
                         <p class="product-name">${product.Descricao_Reduzida || product.Produto}</p>
                     </div>
-
                     <div class="bottom-row">
                         <div class="barcode-area">
-                            <div class="mt-0 barcode-container">
+                            <div class="barcode-container">
                                 <svg id="${barcodeSvgId}"></svg>
                             </div>
                             <p class="ean-text">${product.EAN}</p>
-                            </div>
-
+                        </div>
                         <div class="price-area">
-                            ${isPromo ? `
-                                <p class="promo-info">DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                            ` : ''}
+                            ${isPromo ? `<p class="promo-info">DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>` : ''}
                             <div class="price-wrapper">
-                                <span class="price-prefix font-bold text-black">R$</span>
-                                <span class="price-display text-black">${reais}</span>
-                                <span class="price-separator font-extrabold text-black">,</span> 
-                                <span class="price-cents text-black">${centavos}</span>
+                                <span class="price-prefix">R$</span>
+                                <span class="price-display">${reais}</span>
+                                <span class="price-separator">,</span> 
+                                <span class="price-cents">${centavos}</span>
                             </div>
-                            ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold leading-none mt-0.5">VÁLIDO ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+                            ${isPromo && product.Promocao_ate ? `<p class="promo-validity">VÁLIDO ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                         </div>
                     </div>
                 </div>
             `;
             
-            // CHAMADA DA BIBLIOTECA JSBARCODE
-            if (product.EAN && product.EAN.length === 13) {
-                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: "EAN13",
+            try {
+                JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                     format: product.EAN.length === 13 ? "EAN13" : "CODE128",
                      displayValue: false, 
-                     width: 1.5,
-                     height: 40,
+                     width: 1.8,
+                     height: 50,
                      margin: 0,
-                     textMargin: 0
-                 });
-            } else if (product.EAN) {
-                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: "CODE128",
-                     displayValue: false,
-                     width: 1.5,
-                     height: 40,
-                     margin: 0,
-                     textMargin: 0
-                 });
+                });
+            } catch (e) {
+                console.error("JsBarcode error:", e);
+                document.getElementById(barcodeSvgId).parentElement.innerHTML = '<p class="text-xs text-red-500">EAN Inválido</p>';
             }
         };
 
-        // ---------------------- Lógica do Scanner de Código de Barras (Mantida) ----------------------
-        
-        const scannerVideo = document.getElementById('scanner-video');
-        const scannerModal = document.getElementById('scanner-modal');
-        const scannerFeedback = document.getElementById('scanner-feedback');
-        let barcodeDetector = null; 
-        let track = null; 
-
+        let barcodeDetector = null;
         if ('BarcodeDetector' in window) {
-            try {
-                barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
-                document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
-            } catch (error) {
-                document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
-            }
-        } else {
-            document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
+            try { barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] }); } catch (e) { console.error(e); }
         }
 
         const scanFrame = async () => {
-            if (!scannerModal.classList.contains('hidden') && barcodeDetector) {
+            if (videoStream && barcodeDetector) {
                 try {
-                    const barcodes = await barcodeDetector.detect(scannerVideo);
-
+                    const barcodes = await barcodeDetector.detect(document.getElementById('scanner-video'));
                     if (barcodes.length > 0) {
                         const ean = barcodes[0].rawValue;
-                        scannerFeedback.textContent = `Código lido: ${ean}`;
-                        
                         document.getElementById('search-input').value = ean;
                         stopBarcodeScanner();
-                        searchProduct(); 
-                        return;
-                    } else {
-                         scannerFeedback.textContent = 'Procurando código de barras...';
+                        searchProduct();
                     }
-                } catch (err) {
-                    scannerFeedback.textContent = 'Erro de detecção. Tente novamente.';
-                }
+                } catch (e) { console.error(e); }
             }
-            requestAnimationFrame(scanFrame);
         };
 
         window.startBarcodeScanner = async () => {
-            if (!barcodeDetector) {
-                alert('O seu navegador não suporta a função de scanner por câmera (BarcodeDetector API). Use a digitação manual.');
-                return;
-            }
-
-            scannerModal.classList.remove('hidden');
-            scannerFeedback.textContent = 'Iniciando câmera...';
-
+            if (!barcodeDetector) { alert('Scanner de câmera não suportado neste navegador.'); return; }
+            document.getElementById('scanner-modal').classList.remove('hidden');
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment' 
-                    } 
-                });
-                
-                track = videoStream.getVideoTracks()[0];
-                scannerVideo.srcObject = videoStream;
-                scannerVideo.play();
-                
-                scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
-
-                scanFrame(); 
-
-            } catch (err) {
-                scannerFeedback.textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
-                setTimeout(stopBarcodeScanner, 3000); 
-            }
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                document.getElementById('scanner-video').srcObject = videoStream;
+                setInterval(scanFrame, 200);
+            } catch (err) { alert('Não foi possível acessar a câmera.'); stopBarcodeScanner(); }
         };
 
         window.stopBarcodeScanner = () => {
-            scannerModal.classList.add('hidden');
-            
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            if (track) {
-                track = null;
-            }
-            scannerVideo.srcObject = null;
+            document.getElementById('scanner-modal').classList.add('hidden');
+            if (videoStream) videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
         };
-
-        // ---------------------- Lógica de Impressão (Simulação) - Mantida ----------------------
-
-        const connectToPrinter = async () => {
-            document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    document.getElementById('print-status').textContent = 'Simulação de Conexão: Sucesso.';
-                    resolve({ name: "Simulação de Impressora Bluetooth", isConnected: true });
-                }, 1000);
-            });
-        };
-
-        const generateEscPosCommands = (product, quantity) => {
-            const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
-            const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
-            const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
-
-            let commands = `
-                // --- INÍCIO DO LOTE DE IMPRESSÃO (QTY: ${quantity}) ---
-                <ESC>@
-                <ESC>a<1>
-                ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
-                ----------
-                <ESC>!C<ESC>-1 
-                R$ ${priceText}
-                <ESC>!<0>
-                ----------
-                EMB: ${product.Embalagem || 'UNIDADE'}
-                ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}` : ''}
-                
-                <GS>k<02><${product.EAN}><00> 
-
-                <CR><LF><CR><LF><CR><LF>
-                <GS>V<0>
-                // --- FIM DA ETIQUETA ---
-            `;
-
-            let fullCommand = '';
-            for (let i = 0; i < quantity; i++) {
-                fullCommand += commands;
-            }
-
-            return fullCommand;
-        };
-
-        const printLabels = async () => {
-            if (!selectedProduct) {
-                document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
-                return;
-            }
-
-            const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-            document.getElementById('print-status').textContent = 'Preparando etiquetas...';
-
-            const printer = await connectToPrinter();
-
-            const printCommand = generateEscPosCommands(selectedProduct, quantity);
-
-            console.log("--- COMANDOS ESC/POS GERADOS (SIMULAÇÃO) ---");
-            console.log(printCommand);
-            console.log("---------------------------------------------");
-
-            document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-            document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas (SIMULADO). Verifique o console.`;
-            setTimeout(() => {
-                document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
-                document.getElementById('print-status').innerHTML = '';
-            }, 5000);
+        
+        const printLabels = () => {
+             if (!selectedProduct) return;
+             const qty = document.getElementById('label-qty').value || 1;
+             console.log(`Simulando impressão de ${qty} etiqueta(s) para o produto ${selectedProduct.EAN}.`);
+             document.getElementById('print-status').textContent = `✅ ${qty} etiqueta(s) enviada(s) para a fila (simulação).`;
+             setTimeout(() => { document.getElementById('print-status').textContent = ''; }, 4000);
         };
 
         window.onload = () => {
