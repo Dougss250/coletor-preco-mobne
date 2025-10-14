@@ -27,33 +27,36 @@
             overflow: hidden;
             font-size: 10px;
             
-            /* ESTRUTURA DE GRID: 1. Nome do Produto, 2. Área Inferior */
+            /* ESTRUTURA DE GRID: 1. Nome do Produto (8mm), 2. Área Inferior (20mm) */
+            /* Ajustando 113px para 8mm e 20mm. Mantendo a proporção */
+            grid-template-rows: 30px 80px; /* 30px p/ Nome (~8mm), 80px p/ Rodapé (~20mm) */
             display: grid;
-            grid-template-rows: 25px 84px; /* 25px p/ o Nome (~8mm), 84px p/ o rodapé (~22mm) */
         }
         
-        /* ------------------ 1. NOME DO PRODUTO (TOPO) ------------------ */
+        /* ------------------ 1. NOME DO PRODUTO (TOPO) - 8MM ------------------ */
         .product-name-area {
             grid-row: 1;
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* Alinha o nome ao topo dos 8mm */
             padding-left: 2px;
             overflow: hidden;
+            height: 30px; /* Altura exata da linha */
         }
         .product-name {
-            font-size: 14px; 
+            font-size: 16px; /* Aumentado para 16px (14-16px) */
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
             color: #000;
         }
 
-        /* ------------------ 2. ÁREA INFERIOR (CÓDIGO + PREÇO) ------------------ */
+        /* ------------------ 2. ÁREA INFERIOR (CÓDIGO + PREÇO) - 20MM ------------------ */
         .bottom-row {
             grid-row: 2;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; 
+            align-items: stretch; /* Garante que as áreas preencham a altura de 20mm */
+            height: 80px; /* Altura exata da linha (20mm) */
         }
 
         /* 2.1. CÓDIGO DE BARRAS (55MM - ESQUERDA) */
@@ -62,16 +65,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: flex-end; /* Alinha o conteúdo ao final da área vertical */
             padding-top: 2px;
             height: 100%;
+            box-sizing: border-box;
         }
         .barcode-container svg {
              width: 95%; /* Maximiza largura dentro da área de 55% */
-             height: 45px; /* Altura ideal para 20mm de espaço vertical */
+             height: 50px; /* Aumentado para melhor visibilidade dentro dos 20mm */
         }
         .ean-text {
-            font-size: 10px;
+            font-size: 11px; /* Levemente maior */
             font-weight: 700;
             line-height: 1;
             margin-top: 1px;
@@ -84,49 +88,51 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end; /* Alinhado à direita */
-            justify-content: center; /* Centralizado verticalmente */
+            justify-content: center; /* CENTRALIZADO VERTICALMENTE (20mm) */
             height: 100%;
             padding-right: 2px;
             line-height: 1;
             position: relative;
         }
         
-        /* Preço: DESTAQUE MÁXIMO (Elemento mais destacado) */
+        /* Preço: DESTAQUE MÁXIMO (Ajustado para 32px) */
         .price-wrapper {
             display: flex;
-            align-items: flex-start; /* Alinha todos os elementos do preço ao topo */
+            align-items: flex-end; /* Alinha Reais e Centavos pela base */
             line-height: 1;
         }
         .price-prefix {
-            font-size: 20px; /* R$ */
+            font-size: 18px; /* R$ */
             font-weight: 700;
             line-height: 1;
             margin-right: 2px;
-            margin-top: 2px;
+            margin-top: 0;
         }
         .price-display {
-            font-size: 45px; /* REAIS: Máximo para caber nos 30mm de altura total */
+            font-size: 55px; /* REAIS: Máximo para caber nos 20mm de altura */
             font-weight: 900;
-            line-height: 0.9; 
+            line-height: 0.8; /* Comprime verticalmente */
             color: #000;
         }
         .price-separator {
              font-size: 30px;
              font-weight: 900;
-             line-height: 0.9;
+             line-height: 0.8;
         }
         .price-cents {
-            font-size: 25px; /* Centavos */
+            font-size: 28px; /* Centavos - Aumentado */
             font-weight: 800;
             line-height: 1.1;
-            margin-top: 2px; /* Alinha com o topo do R$ */
+            margin-top: 0; 
+            position: relative;
+            top: -15px; /* Ajuste manual para subir o centavo e alinhá-lo */
         }
 
         .promo-info {
             position: absolute;
             top: 2px; 
             left: 0;
-            font-size: 8px;
+            font-size: 10px; /* Maior para ser legível */
             font-weight: 700;
             color: red;
             line-height: 1;
@@ -167,7 +173,7 @@
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
         const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDqaRqCBh-r2qXCA2A1VMdUpkBvGogurM",
+            apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
             storageBucket: "coletorprecosapp.firebasestorage.app",
@@ -621,7 +627,7 @@
             labelDiv.innerHTML = `
                 <div class="gondola-label">
                     <div class="product-name-area">
-                        <p class="product-name">${product.Descricao_Reduzida || product.Produto}</p>
+                        <p class="product-name">${(product.Descricao_Reduzida || product.Produto)}</p>
                     </div>
 
                     <div class="bottom-row">
