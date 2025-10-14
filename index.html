@@ -21,94 +21,101 @@
             /* 100MM x 30MM em 96 DPI -> 377px x 113px */
             width: 377px; 
             height: 113px; 
-            padding: 2px; /* Margem interna de 2mm (como especificado) */
+            padding: 2px; /* Margem interna de ~2mm */
             box-sizing: border-box;
             background: white;
             border: 1px solid #000;
             overflow: hidden;
-            /* Divisão de layout: 25px para o Nome (~8mm), o resto para a área inferior (~20mm) */
+            /* Divisão de layout: 25px para o Nome, o resto para a área inferior */
             display: grid;
             grid-template-rows: 25px 1fr; 
         }
         
-        /* 1. NOME DO PRODUTO (TOPO) */
+        /* 1. NOME DO PRODUTO (TOPO - CORRIGIDO) */
         .product-name-area {
             grid-row: 1;
             display: flex;
-            align-items: center;
-            padding-left: 2px; /* Pequeno espaçamento à esquerda */
+            align-items: flex-start; /* Alinha o texto do nome ao topo da área */
+            padding-left: 2px; 
             text-align: left;
             width: 100%;
+            height: 25px; /* Limita a altura para o Nome */
             overflow: hidden;
         }
         .product-name {
-            font-size: 15px; /* Fonte 14-16px como especificado */
+            font-size: 15px; 
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1.1;
             color: #000;
-            /* Permite quebra, mas tenta manter em uma linha se possível */
+            /* CORREÇÃO: Permite quebra de linha (normal) e usa -webkit-line-clamp para limitar */
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2; /* Limita a 2 linhas */
             -webkit-box-orient: vertical;
-            max-height: 25px; /* Altura máxima da área */
         }
 
         /* 2. ÁREA INFERIOR (CÓDIGO + PREÇO) */
         .bottom-row {
             grid-row: 2;
             display: flex;
-            align-items: center; /* Alinha o código e o preço no centro vertical da área */
+            align-items: stretch; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (55mm ~ 60% da largura) */
+        /* 2.1. CÓDIGO DE BARRAS (60% da largura) */
         .barcode-area {
             width: 60%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* Alinha o conteúdo à esquerda */
-            justify-content: center; /* Centraliza o código verticalmente */
+            align-items: flex-start; 
+            justify-content: flex-end; /* Alinha o bloco do código/EAN à parte inferior */
             padding-left: 2px;
-            height: 100%; /* Ocupa toda a altura inferior (20mm) */
+            height: 100%;
         }
         .barcode-container {
              width: 100%;
              display: flex;
              height: 50px; /* Altura do código de barras */
-             align-items: flex-end; /* Alinha o código ao fundo */
+             align-items: flex-end; 
         }
         .barcode-container svg {
-             width: 100%;
-             height: 45px; /* Altura do SVG */
+             width: 98%; /* Para garantir que o EAN abaixo fique alinhado */
+             height: 50px; 
+             margin-left: -1px; /* Ajuste fino */
         }
         .ean-text {
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
             color: #000;
-            text-align: left;
-            width: 100%;
-            margin-top: 0;
+            /* CORREÇÃO: Centralizado horizontalmente em relação ao código */
+            text-align: center; 
+            width: 100%; 
+            margin-top: 1px;
+            padding-right: 5px; /* Ajuste fino para centralizar com o svg */
         }
 
-        /* 2.2. PREÇO (35mm ~ 40% da largura) */
+        /* 2.2. PREÇO (40% da largura - CORRIGIDO) */
         .price-area {
             width: 40%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Alinha o preço e o wrapper à direita */
-            justify-content: center; /* Centraliza o preço verticalmente */
+            align-items: flex-end; 
+            /* Alinha o preço verticalmente */
+            justify-content: center; 
             padding-right: 4px;
-            height: 100%; /* Ocupa toda a altura inferior (20mm) */
+            height: 100%; 
             position: relative;
         }
         
         .price-wrapper {
             display: flex;
-            align-items: baseline; /* Essencial para alinhar pela base */
+            /* CORREÇÃO: Alinha o R$ e o valor pela linha de base do texto */
+            align-items: baseline; 
             line-height: 1;
+            /* CORREÇÃO: Ajuste vertical para posicionar o preço mais para cima na área */
+            margin-top: -5px; 
         }
         .price-prefix {
             font-size: 25px; 
@@ -117,7 +124,7 @@
             line-height: 1;
         }
         .price-display {
-            font-size: 60px; /* Reais em destaque */
+            font-size: 60px; 
             font-weight: 900;
             line-height: 0.9; 
             color: #000;
@@ -129,15 +136,15 @@
              margin-right: 1px;
         }
         .price-cents {
-            font-size: 35px; /* Centavos menores */
+            font-size: 35px; 
             font-weight: 800;
             line-height: 1.1;
         }
 
-        /* Estilos de Promoção (Para manter a funcionalidade) */
+        /* Estilos de Promoção */
         .promo-info {
             position: absolute;
-            top: 0; 
+            top: 2px; 
             right: 4px;
             font-size: 10px;
             font-weight: 700;
@@ -161,6 +168,28 @@
             top: -9999px; /* Oculta o div */
             left: -9999px;
             z-index: -1;
+        }
+        /* Estilos do Scanner Modal (Manter) */
+        .scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-video {
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
     </style>
 
@@ -366,7 +395,7 @@
         let videoStream = null;
         let scanInterval = null; 
 
-        // ---------------------- 1. LÓGICA DE UPLOAD (RESTAURADA) ----------------------
+        // ---------------------- 1. LÓGICA DE UPLOAD ----------------------
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -402,7 +431,7 @@
             else reader.readAsText(file);
         });
 
-        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO (RESTAURADA) ----------------------
+        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO ----------------------
 
         const searchProduct = () => {
             const rawQuery = document.getElementById('search-input').value;
@@ -520,15 +549,14 @@
 
         const generateBarcode = (ean, elementId) => {
             try {
-                // Seleciona a tag SVG correta
                 const svgElement = document.getElementById(`barcode-${elementId}`);
                 if (!svgElement) return;
 
                 JsBarcode(svgElement, ean, {
                      format: ean.length === 13 ? "EAN13" : "CODE128",
                      displayValue: false, 
-                     width: 1.8, // Mais espesso para impressão
-                     height: 45, // Altura do código
+                     width: 1.8, 
+                     height: 50, 
                      margin: 0,
                      textMargin: 0
                 });
@@ -548,8 +576,7 @@
             generateBarcode(product.EAN, uniqueId);
         };
         
-        // ---------------------- 4. LÓGICA DO SCANNER (RESTAURADA) ----------------------
-        // O código do scanner está no bloco <script> de baixo.
+        // ---------------------- 4. LÓGICA DO SCANNER (MANTIDA) ----------------------
 
         let barcodeDetector = null;
         if ('BarcodeDetector' in window) {
@@ -613,7 +640,7 @@
             document.getElementById('scanner-video').srcObject = null;
         };
         
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (RESTAURADA E CORRIGIDA PARA IMAGEM) ----------------------
+        // ---------------------- 5. LÓGICA DE IMPRESSÃO (GERAÇÃO DE IMAGEM RESTAURADA) ----------------------
 
         const printLabels = async () => {
              if (!selectedProduct) {
@@ -646,18 +673,16 @@
                 
                 const imageDataURL = canvas.toDataURL('image/png');
                 
-                // 4. Cria o log de impressão e a imagem de preview para debug
+                // 4. Cria o log de impressão e a imagem de preview para debug/download
                 console.log(`✅ Imagem da Etiqueta Gerada para Impressão Externa (PNG Data URL):`);
                 console.log(imageDataURL);
                 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para ver o resultado:<br><a href="${imageDataURL}" download="${selectedProduct.EAN}_etiqueta.png" class="text-blue-500 underline text-xs">Baixar Imagem para Impressão</a>`;
+                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para ver/baixar:<br><a href="${imageDataURL}" download="${selectedProduct.EAN}_etiqueta.png" class="text-blue-500 underline text-xs">Baixar Imagem para App de Impressão</a>`;
 
-                // 5. Simula o envio de N cópias
+                // 5. Simula o envio de N cópias (a imagem deve ser salva/enviada para o app externo aqui)
                 for (let i = 0; i < quantity; i++) {
-                    // Aqui é o ponto onde você integraria com o SDK Bluetooth da impressora, 
-                    // enviando a 'imageDataURL' ou o 'canvas.toBlob' para o aplicativo externo.
-                    console.log(`[SIMULAÇÃO] Enviando cópia ${i + 1}/${quantity} para o app de impressão...`);
+                    console.log(`[SIMULAÇÃO] Copia ${i + 1}/${quantity}. O usuário deve usar o App de Impressão para abrir e imprimir a imagem.`);
                 }
 
              } catch (error) {
@@ -674,7 +699,7 @@
              }
         };
         
-        // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL (ESSENCIAL PARA OS ONCLICK/ONINPUT)
+        // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
         window.searchProduct = searchProduct;
         window.startBarcodeScanner = startBarcodeScanner;
         window.stopBarcodeScanner = stopBarcodeScanner;
