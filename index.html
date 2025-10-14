@@ -86,7 +86,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais para o Firebase e dados
         window.db = null;
@@ -534,12 +534,12 @@
             const barcodeSvgId = `barcode-svg-hidden`; 
             const eanTextId = `ean-text-hidden`;
 
-            // 1. Gerar o SVG no container escondido
+            // 1. Gerar o SVG no container escondido (para ser usado pelo html2canvas)
             if (product.EAN) {
                  const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
                  JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                      format: format,
-                     displayValue: false, // Não mostrar o número no código de barras SVG (o preço já aparece)
+                     displayValue: false, // Não mostrar o número no código de barras SVG
                      width: 1.5,
                      height: 35,
                      margin: 0,
@@ -742,6 +742,7 @@
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
                 const chunk = data.slice(i, i + CHUNK_SIZE);
                 await characteristic.writeValueWithoutResponse(chunk); 
+                // Pequena pausa para impressoras lentas
                 await new Promise(resolve => setTimeout(resolve, 50)); 
             }
         };
@@ -862,18 +863,20 @@
 
 
         /**
-         * FUNÇÃO generateEscPosCommands: AJUSTADA para usar o código de barras como IMAGEM.
+         * FUNÇÃO generateEscPosCommands: Cria os comandos de texto e busca os dados da imagem.
+         * Retorna um objeto com os 3 blocos de bytes.
          */
-        const generateEscPosCommands = async (product, quantity) => {
+        const generateEscPosCommands = async (product) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
 
             // **IMPORTANTE**: Gerar a imagem do código de barras (raster data)
-            // 576 pontos de largura (72mm * 8 pontos/mm)
+            // 576 pontos de largura (72mm * 8 pontos/mm), 60 pontos de altura
             const barcodeImageData = await svgToImageData(576, 60); 
 
-            let textCommands = `
+            // --- BLOCO 1: CABEÇALHO E PREÇO ---
+            let headerCommands = `
                 <ESC>@<CR><LF> // Inicializa a impressora
                 <ESC>a1<CR><LF> // Centraliza
                 
@@ -886,42 +889,33 @@
                 R$ ${priceText}
                 <ESC>!0<CR><LF><CR><LF> // Volta para o tamanho normal e duas quebras de linha
                 
-                // INFORMAÇÕES SECUNDÁRIAS (Tamanho normal)
                 <ESC>a0 // Alinha à esquerda
                 EMB: ${product.Embalagem || 'UNIDADE'}<CR><LF>
                 ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}<CR><LF>` : ''}
                 
                 // Quebra de linha antes do código de barras em imagem
                 <CR><LF>
+                <ESC>a1<CR><LF> // Centraliza para imprimir a imagem
             `;
-
-            let textBytes = stringToBytes(textCommands);
+            const headerBytes = stringToBytes(headerCommands);
             
-            // Junta os comandos de texto e os dados da imagem (código de barras)
-            const combinedData = new Uint8Array(textBytes.length + barcodeImageData.length);
-            combinedData.set(textBytes, 0);
-            combinedData.set(barcodeImageData, textBytes.length);
-
-            // Comandos Finais
-            const finalCommands = `<CR><LF><CR><LF><GS>V0`;
-            const finalBytes = stringToBytes(finalCommands);
-
-            // Cria o bloco final de bytes para a primeira etiqueta
-            const firstLabelBytes = new Uint8Array(combinedData.length + finalBytes.length);
-            firstLabelBytes.set(combinedData, 0);
-            firstLabelBytes.set(finalBytes, combinedData.length);
+            // --- BLOCO 2: IMAGEM DO CÓDIGO DE BARRAS (É o próprio barcodeImageData) ---
             
-            let fullData = new Uint8Array(0);
-
-            // Repete o bloco de bytes pela quantidade de etiquetas
-            for (let i = 0; i < quantity; i++) {
-                const temp = new Uint8Array(fullData.length + firstLabelBytes.length);
-                temp.set(fullData, 0);
-                temp.set(firstLabelBytes, fullData.length);
-                fullData = temp;
-            }
-
-            return fullData;
+            // --- BLOCO 3: RODAPÉ E CORTE ---
+            let footerCommands = `
+                <ESC>a1<CR><LF> // Alinha centralizado
+                Cód: ${product.EAN}<CR><LF>
+                
+                <CR><LF><CR><LF><CR><LF> // AVANÇO DE LINHA EXTRA PARA GARANTIR A ETIQUETA INTEIRA
+                <GS>V0 // Corta o papel
+            `;
+            const footerBytes = stringToBytes(footerCommands);
+            
+            return {
+                header: headerBytes,
+                image: barcodeImageData,
+                footer: footerBytes
+            };
         };
 
         // FUNÇÃO PRINCIPAL DE IMPRESSÃO (REAL)
@@ -934,6 +928,7 @@
             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
             document.getElementById('print-status').textContent = 'Preparando etiqueta (Gerando imagem)...';
 
+            // Passo 1: Conectar à impressora
             let connectionResult;
             try {
                 connectionResult = await connectToPrinter();
@@ -941,14 +936,28 @@
                 return; 
             }
             
-            // Passo 2: Gerar os comandos (agora é assíncrono porque gera a imagem)
-            const dataToSend = await generateEscPosCommands(selectedProduct, quantity);
             const characteristic = connectionResult.characteristic;
+            
+            // Passo 2: Gerar os comandos
+            document.getElementById('print-status').textContent = 'Gerando comandos de impressão (Raster)...';
+            const commandBlocks = await generateEscPosCommands(selectedProduct);
 
             try {
-                document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde)...`;
+                document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde a transferência de dados)...`;
                 
-                await sendDataToPrinter(characteristic, dataToSend);
+                for (let i = 0; i < quantity; i++) {
+                    // 1. Enviar o cabeçalho
+                    await sendDataToPrinter(characteristic, commandBlocks.header);
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Pequena pausa
+
+                    // 2. Enviar a imagem (Bloco grande de dados)
+                    await sendDataToPrinter(characteristic, commandBlocks.image);
+                    await new Promise(resolve => setTimeout(resolve, 200)); // Pausa maior após a imagem
+
+                    // 3. Enviar o rodapé e o corte
+                    await sendDataToPrinter(characteristic, commandBlocks.footer);
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa maior para garantir o corte
+                }
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
                 document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas para impressão.`;
