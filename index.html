@@ -901,11 +901,14 @@
             // --- BLOCO 2: IMAGEM DO CÓDIGO DE BARRAS (É o próprio barcodeImageData) ---
             
             // --- BLOCO 3: RODAPÉ E CORTE (COM AVANÇO EXPLÍCITO) ---
+            // COMANDO FINAL SIMPLIFICADO: Após a imagem, apenas o texto do EAN, 
+            // comando de avanço e corte. Isso minimiza a chance de falha no modo texto.
             let footerCommands = `
+                <ESC>@<CR><LF> // Comando de inicialização para FORÇAR a volta ao modo texto
                 <ESC>a1<CR><LF> // Alinha centralizado
                 Cód: ${product.EAN}<CR><LF>
                 
-                <ESC>d5 // COMANDO DE AVANÇO EXPLÍCITO: Avança o papel 5 linhas (para garantir a etiqueta inteira)
+                <ESC>d7 // COMANDO DE AVANÇO EXPLÍCITO: Avança o papel 7 linhas (Aumentado para segurança)
                 <GS>V0 // Corta o papel
             `;
             const footerBytes = stringToBytes(footerCommands);
@@ -947,15 +950,15 @@
                 for (let i = 0; i < quantity; i++) {
                     // 1. Enviar o cabeçalho (Texto Superior)
                     await sendDataToPrinter(characteristic, commandBlocks.header);
-                    await new Promise(resolve => setTimeout(resolve, 150)); // Pausa Aumentada para buffer
+                    await new Promise(resolve => setTimeout(resolve, 200)); // Pausa Aumentada
 
                     // 2. Enviar a imagem (Bloco grande de dados)
                     await sendDataToPrinter(characteristic, commandBlocks.image);
-                    await new Promise(resolve => setTimeout(resolve, 300)); // Pausa maior (Crítica) após a imagem
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa maior (Crítica) após a imagem
 
                     // 3. Enviar o rodapé e o corte (Texto Inferior e Comando de Avanço/Corte)
                     await sendDataToPrinter(characteristic, commandBlocks.footer);
-                    await new Promise(resolve => setTimeout(resolve, 600)); // Pausa maior para garantir o corte
+                    await new Promise(resolve => setTimeout(resolve, 800)); // Pausa maior para garantir o corte
                 }
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
