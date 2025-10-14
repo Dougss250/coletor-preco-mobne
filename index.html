@@ -91,10 +91,10 @@
         window.allProducts = []; 
 
         // =========================================================================
-        // CONFIGURAÇÃO DO FIREBASE (CORRIGIDA)
+        // CONFIGURAÇÃO DO FIREBASE (CHAVE ATUALIZADA)
         // =========================================================================
         const FIREBASE_CONFIG = {
-            // CRÍTICO: COLOQUE A CHAVE DE API NOVA E VÁLIDA AQUI!
+            // CHAVE DE API ATUALIZADA POR VOCÊ
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE", 
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
@@ -104,7 +104,7 @@
         };
 
 
-        // Mapeamento interno das chaves (tudo em minúsculo e sem caracteres especiais)
+        // Mapeamento interno das chaves
         const INTERNAL_HEADER_MAP = {
             'produto': 'Produto',
             'descricaoreduzida': 'Descricao_Reduzida',
@@ -147,7 +147,7 @@
                 window.auth = getAuth(app);
                 setLogLevel('Debug');
 
-                // Tenta o login anônimo (agora que as regras e chaves estão corrigidas, deve funcionar)
+                // Tenta o login anônimo
                 await signInAnonymously(window.auth);
 
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
@@ -298,7 +298,6 @@
                 document.getElementById('search-input').focus();
             } catch (error) {
                 console.error("Erro ao subir dados para o Firestore:", error);
-                // O erro de permissão deve ser resolvido, mas mantemos o feedback
                 document.getElementById('upload-status').textContent = `Erro ao salvar dados: ${error.message}`;
             }
         };
@@ -657,8 +656,7 @@
 
         // Função utilitária para converter a string de comando ESC/POS em bytes
         const stringToBytes = (str) => {
-            // A impressora térmica espera caracteres de controle, não o texto '<ESC>'.
-            // Substituímos os placeholders por seus caracteres ASCII/Hex (que o TextEncoder entenderá)
+            // Mapeia os placeholders de comandos ESC/POS para seus bytes reais.
             const commands = str
                 .replace(/<ESC>/g, '\x1B') // ESCAPE (0x1B)
                 .replace(/<GS>/g, '\x1D')  // GROUP SEPARATOR (0x1D)
@@ -675,7 +673,6 @@
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
                 const chunk = data.slice(i, i + CHUNK_SIZE);
                 await characteristic.writeValueWithoutResponse(chunk);
-                // Pequena pausa (opcional, mas recomendada)
                 await new Promise(resolve => setTimeout(resolve, 50)); 
             }
         };
@@ -684,16 +681,17 @@
         const connectToPrinter = async () => {
             document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
             
-            // UUIDs Comuns para Impressoras Térmicas (Pode ser necessário adaptar)
             const serviceUuid = '000018f0-0000-1000-8000-00805f9b34fb'; 
             const characteristicUuid = '00002af1-0000-1000-8000-00805f9b34fb'; 
 
+            if (!navigator.bluetooth) {
+                 document.getElementById('print-status').textContent = 'Seu navegador não suporta Web Bluetooth.';
+                 throw new Error("Web Bluetooth não suportado.");
+            }
+
             try {
                 connectedDevice = await navigator.bluetooth.requestDevice({
-                    // Tenta filtrar pelo UUID de serviço
                     filters: [{ services: [serviceUuid] }], 
-                    // Se falhar, use acceptAllDevices: true para ver todos os dispositivos
-                    // acceptAllDevices: true,
                     optionalServices: [serviceUuid]
                 });
 
@@ -708,43 +706,45 @@
 
             } catch (error) {
                 console.error("Erro na conexão Bluetooth:", error);
-                const errorMessage = error.message.includes('User cancelled') ? 'Conexão cancelada.' : 'Erro de Conexão: Verifique o Bluetooth e as permissões.';
+                const errorMessage = error.message.includes('User cancelled') ? 'Conexão cancelada pelo usuário.' : 'Erro de Conexão: Verifique o Bluetooth e as permissões.';
                 document.getElementById('print-status').textContent = errorMessage;
                 throw error;
             }
         };
 
-        // FUNÇÃO PARA GERAR COMANDOS ESC/POS (Mapeado para bytes na função stringToBytes)
+        // FUNÇÃO PARA GERAR COMANDOS ESC/POS (AJUSTADA)
         const generateEscPosCommands = (product, quantity) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
 
-            // \x1B e \x1D serão convertidos para bytes na função stringToBytes
+            // Esta é a string de comandos que a impressora irá processar:
             let commands = `
-                <ESC>@ // Inicializa a impressora
-                <ESC>a1 // Centraliza
+                <ESC>@<CR><LF> // Inicializa a impressora e quebra linha
+                <ESC>a1<CR><LF> // Centraliza e quebra linha
                 
                 ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
                 
-                <CR><LF>
-                <ESC>!C // Tamanho da fonte grande (ajuste para sua impressora)
-                R$ ${priceText}
-                <ESC>!0 // Volta para o tamanho normal
+                <CR><LF> // Linha em branco para separação
                 
-                <CR><LF>
-                EMB: ${product.Embalagem || 'UNIDADE'}
-                <CR><LF>
+                // COMANDO PARA PREÇO (Fonte Grande)
+                <ESC>!C // Tamanho da fonte 
+                R$ ${priceText}
+                <ESC>!0<CR><LF><CR><LF> // Volta para o tamanho normal e duas quebras de linha
+                
+                // INFORMAÇÕES SECUNDÁRIAS (Tamanho normal)
+                <ESC>a0 // Alinha à esquerda (mais fácil para textos longos)
+                EMB: ${product.Embalagem || 'UNIDADE'}<CR><LF>
                 ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}<CR><LF>` : ''}
                 
-                // Comando para CÓDIGO DE BARRAS (Gera um Code 128 com altura e largura)
+                // COMANDO PARA CÓDIGO DE BARRAS (Centraliza novamente)
+                <ESC>a1<CR><LF> // Centraliza 
                 <GS>w2 // Largura do módulo
-                <GS>h50 // Altura da barra
-                <GS>kC<${product.EAN}> // Code 128 com dados
-                <CR><LF><CR><LF>
+                <GS>h50 // Altura da barra (50 dots)
+                <GS>kC<${product.EAN}> // Code 128 (C) com dados do EAN
+                <CR><LF><CR><LF><CR><LF>
 
-                <GS>V0 // Corta o papel
-                <CR><LF>
+                <GS>V0 // Corta o papel (ou <GS>V1 para corte parcial)
             `;
 
             let fullCommand = '';
@@ -767,23 +767,19 @@
 
             let connectionResult;
             try {
-                // 1. Conecta (Isto abrirá a janela de seleção de dispositivos)
                 connectionResult = await connectToPrinter();
             } catch (e) {
-                // Se a conexão falhar (cancelada ou erro), sai
                 return; 
             }
 
             const characteristic = connectionResult.characteristic;
             const printCommandString = generateEscPosCommands(selectedProduct, quantity);
             
-            // 2. Converte a string de comando (com ESC/GS) em bytes
             const dataToSend = stringToBytes(printCommandString);
 
             try {
                 document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde)...`;
                 
-                // 3. Envia os dados em chunks
                 await sendDataToPrinter(characteristic, dataToSend);
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
@@ -793,7 +789,6 @@
                 document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
                 document.getElementById('print-status').innerHTML = `❌ Erro de Envio: ${error.message}`;
             } finally {
-                // 4. Desconecta (Importante para liberar o recurso)
                 if (printerGattServer && printerGattServer.connected) {
                     printerGattServer.disconnect();
                     connectedDevice = null;
