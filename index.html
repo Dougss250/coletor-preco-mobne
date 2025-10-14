@@ -77,7 +77,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais para o Firebase e dados
@@ -651,24 +651,20 @@
         let printerGattServer = null;
 
         /**
-         * CORREÇÃO CRÍTICA APLICADA AQUI
-         * Função utilitária para converter a string de comando ESC/POS em bytes,
-         * garantindo que os bytes de controle (ESC, GS) sejam interpretados corretamente.
+         * FUNÇÃO stringToBytes: CORRIGIDA para reconhecer <NULL> e comandos de escape
          */
         const stringToBytes = (str) => {
-            // Usa um buffer para construir a sequência de bytes.
             const byteArrays = [];
 
-            // Define o mapeamento de comandos para seus bytes hexadecimais
             const commandMap = {
                 '<ESC>': 0x1B, // 27
                 '<GS>': 0x1D,  // 29
                 '<CR>': 0x0D,  // 13
-                '<LF>': 0x0A   // 10
+                '<LF>': 0x0A,  // 10
+                '<NULL>': 0x00 // 0 <-- BYTE NULL/TERMINADOR
             };
 
-            // Regex para encontrar os comandos e o texto ao mesmo tempo
-            const parts = str.split(/(<ESC>|<GS>|<CR>|<LF>)/g).filter(p => p.length > 0);
+            const parts = str.split(/(<ESC>|<GS>|<CR>|<LF>|<NULL>)/g).filter(p => p.length > 0);
             
             for (const part of parts) {
                 const commandByte = commandMap[part.trim()];
@@ -679,27 +675,28 @@
                 } else {
                     // É texto ou comando ESC/POS com argumentos (ex: <ESC>a1, <GS>w2)
                     
-                    // Separa o prefixo de comando (se houver) e o restante
                     let remainingText = part;
+                    let prefixByte = null;
                     
                     if (part.startsWith('<ESC>')) {
-                        byteArrays.push(new Uint8Array([0x1B])); // Adiciona o byte 0x1B (ESC)
+                        prefixByte = 0x1B;
                         remainingText = part.substring('<ESC>'.length);
                     } else if (part.startsWith('<GS>')) {
-                        byteArrays.push(new Uint8Array([0x1D])); // Adiciona o byte 0x1D (GS)
+                        prefixByte = 0x1D;
                         remainingText = part.substring('<GS>'.length);
                     }
 
-                    // Codifica o restante do texto (incluindo o comando e argumentos como "a1", "w2", etc.)
+                    if (prefixByte !== null) {
+                        byteArrays.push(new Uint8Array([prefixByte]));
+                    }
+
                     if (remainingText.length > 0) {
-                        // Limpa o caractere de quebra de linha do template string, se houver
                         const cleanedText = remainingText.replace(/\n\s*/g, ''); 
                         byteArrays.push(new TextEncoder().encode(cleanedText));
                     }
                 }
             }
 
-            // Concatena todos os arrays de bytes em um único Uint8Array
             const totalLength = byteArrays.reduce((acc, arr) => acc + arr.length, 0);
             const result = new Uint8Array(totalLength);
             let offset = 0;
@@ -717,9 +714,9 @@
             const CHUNK_SIZE = 512; 
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
                 const chunk = data.slice(i, i + CHUNK_SIZE);
-                // Usamos writeValueWithoutResponse para maior velocidade na impressão
+                // writeValueWithoutResponse é o método mais rápido e comum para POS
                 await characteristic.writeValueWithoutResponse(chunk); 
-                await new Promise(resolve => setTimeout(resolve, 50)); 
+                await new Promise(resolve => setTimeout(resolve, 50)); // Pequena pausa para estabilidade
             }
         };
 
@@ -727,6 +724,7 @@
         const connectToPrinter = async () => {
             document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
             
+            // UUIDs Padrão para impressoras Bluetooth POS (Service 18F0, Characteristic 2AF1)
             const serviceUuid = '000018f0-0000-1000-8000-00805f9b34fb'; 
             const characteristicUuid = '00002af1-0000-1000-8000-00805f9b34fb'; 
 
@@ -738,7 +736,7 @@
             try {
                 connectedDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [serviceUuid] }], 
-                    optionalServices: [serviceUuid]
+                    optionalServices: [serviceUuid] // Adicionado como opcional para garantir a descoberta
                 });
 
                 document.getElementById('print-status').textContent = `Conectando a ${connectedDevice.name}...`;
@@ -758,14 +756,21 @@
             }
         };
 
-        // FUNÇÃO PARA GERAR COMANDOS ESC/POS (MANTIDA)
+        /**
+         * FUNÇÃO generateEscPosCommands: CORRIGIDA para usar Code 128 com <NULL> como terminador de dados.
+         */
         const generateEscPosCommands = (product, quantity) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
 
-            // \n na string aqui vai virar <LF> ou <CR><LF> pela função stringToBytes,
-            // garantindo a quebra de linha.
+            // Dados do código de barras
+            const eanData = product.EAN || '0000000000000';
+            
+            // Usamos o comando Code 128 (<GS>kC) que é mais robusto para vários tamanhos de EAN/código interno
+            // A sequência é: <GS>k<função> {dados} <NULL>
+            const barcodeCommand = `<GS>kC${eanData}<NULL><CR><LF>`;
+
             let commands = `
                 <ESC>@<CR><LF> // Inicializa a impressora
                 <ESC>a1<CR><LF> // Centraliza
@@ -788,9 +793,10 @@
                 <ESC>a1<CR><LF> // Centraliza 
                 <GS>w2 // Largura do módulo (2 dots)
                 <GS>h50 // Altura da barra (50 dots)
-                <GS>kC${product.EAN} // Code 128 com dados do EAN. REMOVIDO <> para não confundir com placeholders.
-                <CR><LF><CR><LF><CR><LF>
+                
+                ${barcodeCommand}
 
+                <CR><LF><CR><LF> // Linhas em branco finais
                 <GS>V0 // Corta o papel (ou <GS>V1 para corte parcial)
             `;
 
@@ -816,13 +822,12 @@
             try {
                 connectionResult = await connectToPrinter();
             } catch (e) {
-                return; 
+                return; // Sai se a conexão falhar ou for cancelada
             }
 
             const characteristic = connectionResult.characteristic;
             const printCommandString = generateEscPosCommands(selectedProduct, quantity);
             
-            // AQUI ESTÁ A CORREÇÃO
             const dataToSend = stringToBytes(printCommandString);
 
             try {
