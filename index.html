@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coletor de Preços e Etiquetas Bluetooth</title>
+    <title>Coletor de Preços e Etiquetas - Download Imagem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -17,7 +17,8 @@
         }
         /* Estilos específicos para a etiqueta de gôndola */
         .gondola-label {
-            width: 100%;
+            /* Dimensões ideais para uma etiqueta de 72mm. Aumentado para melhor qualidade de imagem */
+            width: 288px; 
             height: auto;
             min-height: 140px; 
             padding: 8px;
@@ -56,7 +57,7 @@
              justify-content: center;
         }
         .barcode-container svg {
-             width: 80%; /* Ajuste o tamanho do SVG aqui para 72mm */
+             width: 80%; 
              max-width: 250px; 
              height: 40px;
         }
@@ -83,23 +84,18 @@
         }
     </style>
     <script type="module">
+        // Importações e lógica do Firebase (mantidas)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variáveis globais para o Firebase e dados
+        
         window.db = null;
         window.auth = null;
         window.appId = null; 
         window.userId = null;
         window.allProducts = []; 
 
-        // =========================================================================
-        // CONFIGURAÇÃO DO FIREBASE (CHAVE ATUALIZADA)
-        // =========================================================================
         const FIREBASE_CONFIG = {
-            // CHAVE DE API ATUALIZADA POR VOCÊ
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE", 
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
@@ -108,8 +104,6 @@
             appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
         };
 
-
-        // Mapeamento interno das chaves
         const INTERNAL_HEADER_MAP = {
             'produto': 'Produto',
             'descricaoreduzida': 'Descricao_Reduzida',
@@ -135,31 +129,23 @@
             return window.normalizeSearchText(header); 
         };
 
-
         window.initFirebase = async () => {
             try {
                 const firebaseConfig = FIREBASE_CONFIG;
-
                 if (!firebaseConfig || !firebaseConfig.appId || !firebaseConfig.apiKey) {
                     document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta.';
                     return;
                 }
                 
                 window.appId = firebaseConfig.appId;
-
                 const app = initializeApp(firebaseConfig);
                 window.db = getFirestore(app);
                 window.auth = getAuth(app);
-                // setLogLevel('Debug'); // Comentar ou remover em produção
-
                 await signInAnonymously(window.auth);
-
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
                 document.getElementById('user-id-display').textContent = `ID do Usuário: ${window.userId}`;
-
                 window.setupProductListener();
                 document.getElementById('status-message').textContent = 'Pronto para carregar dados.'; 
-
             } catch (error) {
                 console.error("Erro na inicialização do Firebase:", error);
                 document.getElementById('status-message').textContent = `Erro fatal: ${error.message}`;
@@ -181,13 +167,11 @@
                 const products = [];
                 querySnapshot.forEach((doc) => {
                     const productData = doc.data();
-                    
                     const searchIndex = [
                         window.normalizeSearchText(productData.EAN),
                         window.normalizeSearchText(productData.Descricao_Reduzida),
                         window.normalizeSearchText(productData.Produto)
                     ].filter(Boolean).join(' ');
-
                     products.push({ ...productData, search_index: searchIndex });
                 });
                 
@@ -198,7 +182,6 @@
                 } else {
                     document.getElementById('status-message').textContent = 'Nenhum produto em memória. Carregue o arquivo XLSX.';
                 }
-
                 document.getElementById('product-count').textContent = `Produtos Carregados: ${products.length}`;
             }, (error) => {
                 console.error("Erro ao obter snapshot de produtos:", error);
@@ -206,6 +189,7 @@
         };
 
         window.processCSV = async (csvText) => {
+            // Lógica de processamento de CSV/XLSX (mantida)
             const cleanText = csvText.replace(/\r/g, '');
             const lines = cleanText.split('\n').filter(line => line.trim() !== '');
             
@@ -275,6 +259,7 @@
         };
 
         window.uploadDataToFirestore = async (products) => {
+            // Lógica de upload para Firestore (mantida)
             if (!window.db) {
                 document.getElementById('upload-status').textContent = 'Erro: Firebase não inicializado.';
                 return;
@@ -349,10 +334,15 @@
                     <p class="text-center text-gray-500">Nenhum produto selecionado.</p>
                 </div>
                 <div id="print-controls" class="mt-4 hidden">
-                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
-                    <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
-                    <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
-                        Imprimir Etiquetas (Web Bluetooth)
+                    <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas (Download):</label>
+                    <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4" disabled/>
+                    
+                    <p class="text-sm text-gray-500 mb-3 p-2 bg-yellow-100 rounded">
+                        ⚠️ **Atenção:** A impressão será feita via imagem (PNG). Salve e imprima pelo seu aplicativo externo (ex: **Impressora Térmica**).
+                    </p>
+
+                    <button onclick="printLabelsAsImage()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
+                        Gerar e Baixar Imagem PNG
                     </button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
@@ -360,10 +350,6 @@
 
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola:</h3>
-                <div id="barcode-image-generation-container" class="absolute left-[-9999px] top-[-9999px] bg-white p-2">
-                    <svg id="barcode-svg-hidden" style="width: 250px; height: 40px;"></svg>
-                    <p id="ean-text-hidden" style="text-align: center; font-family: monospace; font-size: 10px; margin-top: 2px;"></p>
-                </div>
 
                 <div id="label-preview" class="gondola-label max-w-xs shadow-xl">
                     <p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>
@@ -387,10 +373,10 @@
         let videoStream = null;
         let barcodeInterval = null;
         
-        // ---------------------- Lógica de Upload (Event Listener) ----------------------
-
+        // ---------------------- Lógica de Upload e Busca (Mantidas) ----------------------
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
-            const file = event.target.files[0];
+             // ... (lógica mantida)
+             const file = event.target.files[0];
             if (!file) return;
             
             const fileName = file.name;
@@ -437,9 +423,9 @@
             }
         });
 
-        // ---------------------- Lógica de Busca e Seleção ----------------------
 
         const searchProduct = () => {
+            // ... (lógica mantida)
             const rawQuery = document.getElementById('search-input').value;
             const normalizedQuery = window.normalizeSearchText(rawQuery);
 
@@ -480,7 +466,8 @@
         };
 
         const selectProduct = (product) => {
-            selectedProduct = product;
+            // ... (lógica mantida)
+             selectedProduct = product;
             document.getElementById('search-results').innerHTML = '';
             document.getElementById('search-input').value = product.EAN;
             document.getElementById('label-qty').value = product.Qtde_Etiquetas || 1;
@@ -488,6 +475,7 @@
         };
 
         const updateSelectionUI = () => {
+            // ... (lógica mantida)
             const detailsDiv = document.getElementById('selected-product-details');
             const printControlsDiv = document.getElementById('print-controls');
 
@@ -515,6 +503,7 @@
             }
         };
 
+
         // ---------------------- Lógica de Geração da Etiqueta (Preview) ----------------------
 
         const generateLabelPreview = (product) => {
@@ -531,27 +520,11 @@
 
             const [reais, centavos] = formattedPrice.split(',');
             
-            const barcodeSvgId = `barcode-svg-hidden`; 
-            const eanTextId = `ean-text-hidden`;
+            const barcodeSvgId = `barcode-svg-preview`; 
 
-            // 1. Gerar o SVG no container escondido (para ser usado pelo html2canvas)
-            if (product.EAN) {
-                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
-                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: format,
-                     displayValue: false, // Não mostrar o número no código de barras SVG
-                     width: 1.5,
-                     height: 35,
-                     margin: 0,
-                     textMargin: 0
-                 });
-                 document.getElementById(eanTextId).textContent = product.EAN;
-            }
-
-
-            // 2. Montar o Preview Visível
+            // 1. Montar o Preview Visível (único elemento agora)
             labelDiv.innerHTML = `
-                <div class="gondola-label">
+                <div class="gondola-label" id="label-for-canvas">
                     <div class="text-left mb-2">
                         <p class="font-extrabold uppercase text-sm leading-tight">${product.Descricao_Reduzida || product.Produto}</p>
                     </div>
@@ -574,17 +547,17 @@
                         ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold">Oferta Válida até ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                         
                         <div class="mt-1 flex justify-center barcode-container">
-                            <svg id="barcode-svg-preview"></svg>
+                            <svg id="${barcodeSvgId}"></svg>
                         </div>
                          <p class="text-xs text-gray-700 font-medium">${product.EAN}</p>
                     </div>
                 </div>
             `;
             
-             // Duplicar o SVG para o preview (JsBarcode não consegue mover elementos)
+             // 2. Gerar o SVG
              if (product.EAN) {
                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
-                JsBarcode(`#barcode-svg-preview`, product.EAN, {
+                JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                     format: format,
                     displayValue: false, 
                     width: 1.5,
@@ -595,8 +568,7 @@
             }
         };
 
-        // ---------------------- Lógica do Scanner (Camera) ----------------------
-        
+        // ---------------------- Lógica do Scanner (Mantida) ----------------------
         const scannerVideo = document.getElementById('scanner-video');
         const scannerModal = document.getElementById('scanner-modal');
         const scannerFeedback = document.getElementById('scanner-feedback');
@@ -606,14 +578,11 @@
         if ('BarcodeDetector' in window) {
             try {
                 barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
-                document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
             } catch (error) {
-                document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
+                // Ignore initialization error
             }
-        } else {
-            document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
-        }
-
+        } 
+        
         const scanFrame = async () => {
             if (!scannerModal.classList.contains('hidden') && barcodeDetector) {
                 try {
@@ -677,304 +646,66 @@
             }
         };
 
-        // ---------------------- Lógica de IMPRESSÃO BLUETOOTH REAL ----------------------
+
+        // ---------------------- NOVA LÓGICA DE DOWNLOAD DE IMAGEM ----------------------
         
-        let connectedDevice = null;
-        let printerGattServer = null;
-
-        const stringToBytes = (str) => {
-            const byteArrays = [];
-
-            const commandMap = {
-                '<ESC>': 0x1B, // 27
-                '<GS>': 0x1D,  // 29
-                '<CR>': 0x0D,  // 13
-                '<LF>': 0x0A,  // 10
-                '<NULL>': 0x00, // 0
-            };
-            
-            // Regex para capturar comandos e texto (ignora os bytes específicos de EAN que removemos)
-            const parts = str.split(/(<ESC>|<GS>|<CR>|<LF>|<NULL>)/g).filter(p => p.length > 0);
-            
-            for (const part of parts) {
-                const commandByte = commandMap[part.trim()];
-                
-                if (commandByte !== undefined) {
-                    byteArrays.push(new Uint8Array([commandByte]));
-                } else {
-                    let remainingText = part;
-                    let prefixByte = null;
-                    
-                    if (part.startsWith('<ESC>')) {
-                        prefixByte = 0x1B;
-                        remainingText = part.substring('<ESC>'.length);
-                    } else if (part.startsWith('<GS>')) {
-                        prefixByte = 0x1D;
-                        remainingText = part.substring('<GS>'.length);
-                    }
-
-                    if (prefixByte !== null) {
-                        byteArrays.push(new Uint8Array([prefixByte]));
-                    }
-
-                    if (remainingText.length > 0) {
-                        const cleanedText = remainingText.replace(/\n\s*/g, ''); 
-                        byteArrays.push(new TextEncoder().encode(cleanedText));
-                    }
-                }
-            }
-
-            const totalLength = byteArrays.reduce((acc, arr) => acc + arr.length, 0);
-            const result = new Uint8Array(totalLength);
-            let offset = 0;
-            for (const arr of byteArrays) {
-                result.set(arr, offset);
-                offset += arr.length;
-            }
-
-            return result;
-        };
-
-
-        // FUNÇÃO PARA ENVIAR DADOS (com chunking para estabilidade)
-        const sendDataToPrinter = async (characteristic, data) => {
-            const CHUNK_SIZE = 512; 
-            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-                const chunk = data.slice(i, i + CHUNK_SIZE);
-                await characteristic.writeValueWithoutResponse(chunk); 
-                // Pequena pausa para impressoras lentas
-                await new Promise(resolve => setTimeout(resolve, 50)); 
-            }
-        };
-
-        // FUNÇÃO PARA CONECTAR À IMPRESSORA
-        const connectToPrinter = async () => {
-            document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
-            
-            const serviceUuid = '000018f0-0000-1000-8000-00805f9b34fb'; 
-            const characteristicUuid = '00002af1-0000-1000-8000-00805f9b34fb'; 
-
-            if (!navigator.bluetooth) {
-                 document.getElementById('print-status').textContent = 'Seu navegador não suporta Web Bluetooth.';
-                 throw new Error("Web Bluetooth não suportado.");
-            }
-
-            try {
-                connectedDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [serviceUuid] }], 
-                    optionalServices: [serviceUuid]
-                });
-
-                document.getElementById('print-status').textContent = `Conectando a ${connectedDevice.name}...`;
-
-                printerGattServer = await connectedDevice.gatt.connect();
-                const service = await printerGattServer.getPrimaryService(serviceUuid);
-                const characteristic = await service.getCharacteristic(characteristicUuid);
-
-                document.getElementById('print-status').textContent = `Conexão bem-sucedida com ${connectedDevice.name}!`;
-                return { isConnected: true, characteristic: characteristic };
-
-            } catch (error) {
-                console.error("Erro na conexão Bluetooth:", error);
-                const errorMessage = error.message.includes('User cancelled') ? 'Conexão cancelada pelo usuário.' : 'Erro de Conexão: Verifique o Bluetooth e as permissões.';
-                document.getElementById('print-status').textContent = errorMessage;
-                throw error;
-            }
-        };
-
-
         /**
-         * Converte a área do código de barras em dados de imagem ESC/POS (Raster Data)
-         * @param {number} widthDots - Largura em pontos (72mm = 576 pontos)
-         * @param {number} heightDots - Altura em pontos
-         * @returns {Uint8Array} Byte array com o comando GS v 0 m e o bitmap
+         * Transforma o preview da etiqueta em uma imagem PNG e força o download.
          */
-        const svgToImageData = async (widthDots = 576, heightDots = 60) => {
-             // Container com o SVG e o texto do EAN
-            const container = document.getElementById('barcode-image-generation-container');
-            
-             // 1. Renderiza o HTML (SVG + texto) para um canvas
-            const canvas = await html2canvas(container, {
-                scale: 1, 
-                logging: false,
-                useCORS: true,
-                width: widthDots,
-                height: heightDots,
-            });
-
-            const context = canvas.getContext('2d');
-            const imageData = context.getImageData(0, 0, widthDots, heightDots);
-
-            const dotsPerLine = widthDots; // 576 pontos
-            const byteWidth = Math.ceil(dotsPerLine / 8); // 72 bytes
-
-            let bitmapData = [];
-
-            for (let y = 0; y < heightDots; y++) {
-                let currentByte = 0;
-                let bitCount = 0;
-
-                for (let x = 0; x < dotsPerLine; x++) {
-                    const pixelIndex = (y * dotsPerLine + x) * 4;
-                    // Mapeamento: 0 (preto) é LIGADO, 255 (branco) é DESLIGADO.
-                    // Se o canal vermelho for < 128, consideramos preto.
-                    const isBlack = imageData.data[pixelIndex] < 128; 
-
-                    if (isBlack) {
-                        currentByte |= (0x80 >> bitCount); // Seta o bit
-                    }
-
-                    bitCount++;
-
-                    if (bitCount === 8) {
-                        bitmapData.push(currentByte);
-                        currentByte = 0;
-                        bitCount = 0;
-                    }
-                }
-                if (bitCount > 0) {
-                     bitmapData.push(currentByte);
-                }
-            }
-
-            const dataLength = bitmapData.length;
-            const dataBytes = new Uint8Array(bitmapData);
-
-            // COMANDO ESC/POS GS v 0 (Imprimir imagem raster)
-            // GS v 0 m xL xH yL yH [dados]
-            // m (modo) = 0 (ou 48)
-            // xL, xH = (byteWidth) em 2 bytes
-            // yL, yH = (heightDots) em 2 bytes
-
-            const commandHeader = new Uint8Array([
-                0x1D, 0x76, 0x30, // GS v 0
-                0x00,             // m = 0
-                byteWidth & 0xFF, (byteWidth >> 8) & 0xFF, // xL, xH
-                heightDots & 0xFF, (heightDots >> 8) & 0xFF // yL, yH
-            ]);
-
-            const fullCommand = new Uint8Array(commandHeader.length + dataBytes.length);
-            fullCommand.set(commandHeader, 0);
-            fullCommand.set(dataBytes, commandHeader.length);
-
-            return fullCommand;
-        };
-
-
-        /**
-         * FUNÇÃO generateEscPosCommands: Cria os comandos de texto e busca os dados da imagem.
-         * Retorna um objeto com os 3 blocos de bytes (Header, Imagem, Footer/Corte).
-         */
-        const generateEscPosCommands = async (product) => {
-            const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
-            const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
-            const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
-
-            // **IMPORTANTE**: Gerar a imagem do código de barras (raster data)
-            // 576 pontos de largura (72mm * 8 pontos/mm), 60 pontos de altura
-            const barcodeImageData = await svgToImageData(576, 60); 
-
-            // --- BLOCO 1: CABEÇALHO E PREÇO ---
-            let headerCommands = `
-                <ESC>@<CR><LF> // Inicializa a impressora
-                <ESC>a1<CR><LF> // Centraliza
-                
-                ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
-                
-                <CR><LF> // Linha em branco para separação
-                
-                // COMANDO PARA PREÇO (Fonte Grande)
-                <ESC>!C // Tamanho da fonte (duplo altura e largura)
-                R$ ${priceText}
-                <ESC>!0<CR><LF><CR><LF> // Volta para o tamanho normal e duas quebras de linha
-                
-                <ESC>a0 // Alinha à esquerda
-                EMB: ${product.Embalagem || 'UNIDADE'}<CR><LF>
-                ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}<CR><LF>` : ''}
-                
-                // Quebra de linha antes do código de barras em imagem
-                <CR><LF>
-                <ESC>a1<CR><LF> // Centraliza para imprimir a imagem
-            `;
-            const headerBytes = stringToBytes(headerCommands);
-            
-            // --- BLOCO 2: IMAGEM DO CÓDIGO DE BARRAS (É o próprio barcodeImageData) ---
-            
-            // --- BLOCO 3: RODAPÉ E CORTE (COM AVANÇO EXPLÍCITO) ---
-            // COMANDO FINAL SIMPLIFICADO: Após a imagem, apenas o texto do EAN, 
-            // comando de avanço e corte. Isso minimiza a chance de falha no modo texto.
-            let footerCommands = `
-                <ESC>@<CR><LF> // Comando de inicialização para FORÇAR a volta ao modo texto
-                <ESC>a1<CR><LF> // Alinha centralizado
-                Cód: ${product.EAN}<CR><LF>
-                
-                <ESC>d7 // COMANDO DE AVANÇO EXPLÍCITO: Avança o papel 7 linhas (Aumentado para segurança)
-                <GS>V0 // Corta o papel
-            `;
-            const footerBytes = stringToBytes(footerCommands);
-            
-            return {
-                header: headerBytes,
-                image: barcodeImageData,
-                footer: footerBytes
-            };
-        };
-
-        // FUNÇÃO PRINCIPAL DE IMPRESSÃO (REAL)
-        const printLabels = async () => {
+        const printLabelsAsImage = async () => {
             if (!selectedProduct) {
                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
                 return;
             }
 
             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-            document.getElementById('print-status').textContent = 'Preparando etiqueta (Gerando imagem)...';
+            document.getElementById('print-status').textContent = `Gerando ${quantity} imagem(ns) da etiqueta...`;
+            document.getElementById('print-status').className = 'text-sm mt-2 text-blue-600 font-bold';
 
-            // Passo 1: Conectar à impressora
-            let connectionResult;
-            try {
-                connectionResult = await connectToPrinter();
-            } catch (e) {
-                return; 
+            const labelElement = document.getElementById('label-for-canvas');
+            if (!labelElement) {
+                 document.getElementById('print-status').textContent = 'Erro: Elemento de preview não encontrado.';
+                 return;
             }
-            
-            const characteristic = connectionResult.characteristic;
-            
-            // Passo 2: Gerar os comandos
-            document.getElementById('print-status').textContent = 'Gerando comandos de impressão (Raster)...';
-            const commandBlocks = await generateEscPosCommands(selectedProduct);
 
             try {
-                document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde a transferência de dados)...`;
-                
-                for (let i = 0; i < quantity; i++) {
-                    // 1. Enviar o cabeçalho (Texto Superior)
-                    await sendDataToPrinter(characteristic, commandBlocks.header);
-                    await new Promise(resolve => setTimeout(resolve, 200)); // Pausa Aumentada
+                // 1. Capturar o conteúdo da div em um canvas
+                const canvas = await html2canvas(labelElement, {
+                    scale: 3, // Aumenta a escala para triplicar a resolução (melhor qualidade para impressão)
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: '#ffffff' // Garante fundo branco
+                });
 
-                    // 2. Enviar a imagem (Bloco grande de dados)
-                    await sendDataToPrinter(characteristic, commandBlocks.image);
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa maior (Crítica) após a imagem
+                // 2. Converter o canvas para um link de dados (PNG)
+                const imageURI = canvas.toDataURL('image/png');
 
-                    // 3. Enviar o rodapé e o corte (Texto Inferior e Comando de Avanço/Corte)
-                    await sendDataToPrinter(characteristic, commandBlocks.footer);
-                    await new Promise(resolve => setTimeout(resolve, 800)); // Pausa maior para garantir o corte
-                }
+                // 3. Forçar o download da imagem
+                const link = document.createElement('a');
+                link.href = imageURI;
+                // Cria um nome de arquivo descritivo
+                const fileName = `Etiqueta-${selectedProduct.EAN}-${selectedProduct.Descricao_Reduzida.substring(0, 15).replace(/\s/g, '_')}.png`;
+                link.download = fileName; 
+
+                // Adiciona o link ao corpo do documento e simula o clique
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas para impressão.`;
+                document.getElementById('print-status').innerHTML = `✅ Imagem gerada com sucesso! <br> Abra o arquivo **${fileName}** no seu app de impressão.`;
+
             } catch (error) {
-                console.error("Erro ao enviar dados para a impressora:", error);
+                console.error("Erro ao gerar ou baixar imagem:", error);
                 document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
-                document.getElementById('print-status').innerHTML = `❌ Erro de Envio: ${error.message}`;
-            } finally {
-                if (printerGattServer && printerGattServer.connected) {
-                    printerGattServer.disconnect();
-                    connectedDevice = null;
-                    printerGattServer = null;
-                }
+                document.getElementById('print-status').innerHTML = `❌ Erro na Geração da Imagem: ${error.message}`;
             }
         };
+
+
+        // Renomeia a função para refletir a nova estratégia
+        window.printLabels = printLabelsAsImage;
+
 
         // Inicializa o Firebase ao carregar a página
         window.onload = () => {
