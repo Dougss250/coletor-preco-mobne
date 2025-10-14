@@ -15,52 +15,73 @@
             font-family: 'Inter', sans-serif;
             background-color: #f7f7f7;
         }
-        /* Estilos específicos para a etiqueta de gôndola */
+        
+        /* ESTILOS DA ETIQUETA 100MM x 30MM (Aproximadamente 377px x 113px) */
         .gondola-label {
-            /* Dimensões ideais para uma etiqueta de 72mm em preview */
-            width: 288px; 
-            height: auto;
-            min-height: 140px; 
-            padding: 8px;
+            /* 100mm de largura. Ajustado para melhor qualidade de imagem */
+            width: 377px; 
+            /* 30mm de altura. */
+            height: 113px; 
+            padding: 5px 8px; 
             box-sizing: border-box;
             background: white;
             border: 2px solid #333;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: space-between; 
             overflow: hidden;
             font-size: 10px;
         }
+        
+        /* Preço: Alinhamento e Tamanho para caber ao lado do código de barras */
+        .price-container {
+             display: flex;
+             align-items: flex-end; 
+             justify-content: flex-end; 
+             height: 100%; 
+        }
+        .price-prefix {
+            font-size: 18px; /* R$ */
+            font-weight: 700;
+            margin-right: 2px;
+            margin-bottom: 5px; /* Alinha o prefixo um pouco acima da base */
+        }
         .price-display {
-            font-size: 40px;
+            font-size: 50px; /* Reais */
             font-weight: 900;
-            color: #000;
             line-height: 1;
         }
         .price-cents {
-            font-size: 20px;
+            font-size: 25px; /* Centavos */
             font-weight: 800;
             vertical-align: top;
-            display: inline-block;
-            margin-top: -10px;
-            margin-left: 0px; 
+            line-height: 1.2;
+            margin-left: 2px;
         }
-        .price-prefix {
-            font-size: 16px;
-            font-weight: 600;
-            margin-right: 4px;
+
+        /* Container da Linha Inferior (Duas Colunas) */
+        .bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end; 
+            flex-grow: 1; 
         }
-        /* Garantir que o container da imagem do código de barras não interfira */
-        .barcode-container {
-             width: 100%; 
+
+        /* Código de Barras */
+        .barcode-col {
+             width: 60%; 
              display: flex;
-             justify-content: center;
+             flex-direction: column;
+             align-items: center;
+             justify-content: flex-end;
         }
-        .barcode-container svg {
-             width: 80%; 
+        .barcode-col svg {
+             width: 95%; 
              max-width: 250px; 
-             height: 40px;
+             height: 45px; /* Altura do código de barras */
         }
+        
+        /* Estilos do Scanner */
         .scanner-modal {
             position: fixed;
             top: 0;
@@ -83,6 +104,7 @@
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
     </style>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -94,11 +116,7 @@
         window.userId = null;
         window.allProducts = []; 
 
-        // =========================================================================
-        // CONFIGURAÇÃO DO FIREBASE
-        // =========================================================================
         const FIREBASE_CONFIG = {
-            // Chave de API que você forneceu
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE", 
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
@@ -350,7 +368,7 @@
             </div>
 
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
-                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola:</h3>
+                <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola (100x30mm):</h3>
 
                 <div id="label-preview" class="gondola-label max-w-xs shadow-xl">
                     <p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>
@@ -467,7 +485,7 @@
         const selectProduct = (product) => {
             selectedProduct = product;
             document.getElementById('search-input').value = product.EAN;
-            document.getElementById('label-qty').value = 1; // Força 1, já que é uma imagem
+            document.getElementById('label-qty').value = 1; 
             document.getElementById('search-results').innerHTML = '';
             updateSelectionUI();
         };
@@ -477,7 +495,7 @@
             const printControlsDiv = document.getElementById('print-controls');
             const printStatusDiv = document.getElementById('print-status');
             printStatusDiv.className = 'text-xs mt-2 text-red-500';
-            printStatusDiv.textContent = ''; // Limpa o status de impressão anterior
+            printStatusDiv.textContent = ''; 
 
             if (selectedProduct) {
                 const isPromo = selectedProduct.Preco_Promocao > 0 && selectedProduct.Preco_Promocao < selectedProduct.Preco_Normal;
@@ -503,7 +521,7 @@
             }
         };
 
-        // ---------------------- Lógica de Geração da Etiqueta (Preview) ----------------------
+        // ---------------------- NOVO LAYOUT DE GERAÇÃO DA ETIQUETA (100x30mm) ----------------------
 
         const generateLabelPreview = (product) => {
             const labelDiv = document.getElementById('label-preview');
@@ -521,34 +539,30 @@
             
             const barcodeSvgId = `barcode-svg-preview`; 
 
-            // 1. Montar o Preview Visível (único elemento agora)
+            // 1. Montar o Preview Visível (com layout de duas colunas)
             labelDiv.innerHTML = `
                 <div class="gondola-label" id="label-for-canvas">
-                    <div class="text-left mb-2">
+                    <div class="text-center">
                         <p class="font-extrabold uppercase text-sm leading-tight">${product.Descricao_Reduzida || product.Produto}</p>
+                        <p class="text-xs text-gray-700 font-medium mt-0.5">${product.Embalagem || 'UNIDADE'} | Ref: ${product.Ref_Forn || 'N/A'}</p>
+                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold mt-0.5">Oferta Válida até ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                     </div>
 
-                    <div class="text-center flex flex-col items-center justify-center py-1">
-                        ${isPromo ? `
-                            <p class="text-xs text-red-500 line-through">De: R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                            <p class="text-sm font-bold text-red-700 mt-0.5">PREÇO PROMOCIONAL</p>
-                        ` : ''}
-                        <div class="flex items-end justify-center">
-                            <span class="price-prefix font-bold text-black">R$</span>
-                            <span class="price-display text-black">${reais}</span>
-                            <span class="text-3xl font-extrabold text-black">,</span> 
-                            <span class="price-cents text-black">${centavos}</span>
+                    <div class="bottom-row">
+                        <div class="barcode-col">
+                            ${isPromo ? `<p class="text-xs text-red-500 line-through">De: R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>` : ''}
+                            <div class="mt-0.5 flex justify-center">
+                                <svg id="${barcodeSvgId}"></svg>
+                            </div>
+                            <p class="text-xs text-gray-700 font-medium mt-0.5">${product.EAN}</p>
                         </div>
-                    </div>
 
-                    <div class="text-center pt-1 border-t border-dashed border-gray-300">
-                        <p class="text-xs text-gray-700 font-medium">${product.Embalagem || 'UNIDADE'}</p>
-                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold">Oferta Válida até ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
-                        
-                        <div class="mt-1 flex justify-center barcode-container">
-                            <svg id="${barcodeSvgId}"></svg>
+                        <div class="w-40 price-container ${isPromo ? 'text-red-700' : 'text-black'}">
+                            <span class="price-prefix font-bold">R$</span>
+                            <span class="price-display">${reais}</span>
+                            <span class="text-4xl font-extrabold">,</span> 
+                            <span class="price-cents">${centavos}</span>
                         </div>
-                         <p class="text-xs text-gray-700 font-medium">${product.EAN}</p>
                     </div>
                 </div>
             `;
@@ -560,7 +574,7 @@
                     format: format,
                     displayValue: false, 
                     width: 1.5,
-                    height: 35,
+                    height: 45, 
                     margin: 0,
                     textMargin: 0
                 });
@@ -576,7 +590,6 @@
 
         if ('BarcodeDetector' in window) {
             try {
-                // Inicializa o detector para os formatos mais comuns de etiquetas
                 barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
                 document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
             } catch (error) {
@@ -603,7 +616,6 @@
                          scannerFeedback.textContent = 'Procurando código de barras...';
                     }
                 } catch (err) {
-                    // console.error(err);
                     scannerFeedback.textContent = 'Erro de detecção. Tente novamente.';
                 }
             }
@@ -630,7 +642,6 @@
                 
                 scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
 
-                // Inicia o loop de escaneamento
                 requestAnimationFrame(scanFrame);
 
             } catch (err) {
@@ -666,7 +677,6 @@
             document.getElementById('print-status').textContent = `Gerando imagem da etiqueta...`;
             document.getElementById('print-status').className = 'text-sm mt-2 text-blue-600 font-bold';
 
-            // O elemento a ser convertido em imagem
             const labelElement = document.getElementById('label-for-canvas'); 
             if (!labelElement) {
                  document.getElementById('print-status').textContent = 'Erro: Elemento de preview não encontrado.';
@@ -676,7 +686,7 @@
             try {
                 // 1. Capturar o conteúdo da div em um canvas
                 const canvas = await html2canvas(labelElement, {
-                    scale: 3, // Aumenta a escala para 3x (melhor resolução para impressão)
+                    scale: 3, // Aumenta a escala para 3x (alta resolução para impressão)
                     logging: false,
                     useCORS: true,
                     backgroundColor: '#ffffff' 
@@ -688,12 +698,10 @@
                 // 3. Forçar o download da imagem
                 const link = document.createElement('a');
                 link.href = imageURI;
-                // Cria um nome de arquivo descritivo
                 const safeDesc = selectedProduct.Descricao_Reduzida ? selectedProduct.Descricao_Reduzida.substring(0, 15).replace(/\s/g, '_').replace(/[^a-zA-Z0-9_]/g, '') : 'etiqueta';
                 const fileName = `Etiqueta-${selectedProduct.EAN}-${safeDesc}.png`;
                 link.download = fileName; 
 
-                // Simula o clique para iniciar o download
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
