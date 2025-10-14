@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -47,10 +49,16 @@
             font-weight: 600;
             margin-right: 4px;
         }
-        .barcode-container svg {
+        /* Garantir que o container da imagem do código de barras não interfira */
+        .barcode-container {
              width: 100%; 
-             height: 100%;
-             max-height: 40px;
+             display: flex;
+             justify-content: center;
+        }
+        .barcode-container svg {
+             width: 80%; /* Ajuste o tamanho do SVG aqui para 72mm */
+             max-width: 250px; 
+             height: 40px;
         }
         .scanner-modal {
             position: fixed;
@@ -142,7 +150,7 @@
                 const app = initializeApp(firebaseConfig);
                 window.db = getFirestore(app);
                 window.auth = getAuth(app);
-                setLogLevel('Debug');
+                // setLogLevel('Debug'); // Comentar ou remover em produção
 
                 await signInAnonymously(window.auth);
 
@@ -352,6 +360,11 @@
 
             <div class="p-4 border-4 border-dashed border-red-300 rounded-xl bg-yellow-50 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-red-700 mb-3">Preview da Etiqueta de Gôndola:</h3>
+                <div id="barcode-image-generation-container" class="absolute left-[-9999px] top-[-9999px] bg-white p-2">
+                    <svg id="barcode-svg-hidden" style="width: 250px; height: 40px;"></svg>
+                    <p id="ean-text-hidden" style="text-align: center; font-family: monospace; font-size: 10px; margin-top: 2px;"></p>
+                </div>
+
                 <div id="label-preview" class="gondola-label max-w-xs shadow-xl">
                     <p class="text-center text-gray-500 pt-8">Modelo de Etiqueta</p>
                 </div>
@@ -518,8 +531,25 @@
 
             const [reais, centavos] = formattedPrice.split(',');
             
-            const barcodeSvgId = `barcode-ean-${product.EAN}-${Date.now()}`; 
+            const barcodeSvgId = `barcode-svg-hidden`; 
+            const eanTextId = `ean-text-hidden`;
 
+            // 1. Gerar o SVG no container escondido
+            if (product.EAN) {
+                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
+                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
+                     format: format,
+                     displayValue: false, // Não mostrar o número no código de barras SVG (o preço já aparece)
+                     width: 1.5,
+                     height: 35,
+                     margin: 0,
+                     textMargin: 0
+                 });
+                 document.getElementById(eanTextId).textContent = product.EAN;
+            }
+
+
+            // 2. Montar o Preview Visível
             labelDiv.innerHTML = `
                 <div class="gondola-label">
                     <div class="text-left mb-2">
@@ -544,22 +574,24 @@
                         ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold">Oferta Válida até ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                         
                         <div class="mt-1 flex justify-center barcode-container">
-                            <svg id="${barcodeSvgId}"></svg>
+                            <svg id="barcode-svg-preview"></svg>
                         </div>
+                         <p class="text-xs text-gray-700 font-medium">${product.EAN}</p>
                     </div>
                 </div>
             `;
             
-            if (product.EAN) {
-                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
-                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: format,
-                     displayValue: false, 
-                     width: 1.5,
-                     height: 35,
-                     margin: 0,
-                     textMargin: 0
-                 });
+             // Duplicar o SVG para o preview (JsBarcode não consegue mover elementos)
+             if (product.EAN) {
+                const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
+                JsBarcode(`#barcode-svg-preview`, product.EAN, {
+                    format: format,
+                    displayValue: false, 
+                    width: 1.5,
+                    height: 35,
+                    margin: 0,
+                    textMargin: 0
+                });
             }
         };
 
@@ -650,9 +682,6 @@
         let connectedDevice = null;
         let printerGattServer = null;
 
-        /**
-         * FUNÇÃO stringToBytes: CORRIGIDA para adicionar novos bytes de comando (EAN13/CODE128)
-         */
         const stringToBytes = (str) => {
             const byteArrays = [];
 
@@ -662,26 +691,17 @@
                 '<CR>': 0x0D,  // 13
                 '<LF>': 0x0A,  // 10
                 '<NULL>': 0x00, // 0
-                
-                // NOVOS: Bytes para o comando GS k m n {dados}
-                '<EAN13_TYPE_BYTE>': 0x43, // 67 decimal (EAN13)
-                '<EAN13_LEN_BYTE>': 0x0D,  // 13 decimal (Comprimento do EAN13)
-
-                '<CODE128_TYPE_BYTE>': 0x49, // 73 decimal (Code 128 - Se necessário)
             };
-
-            // Adiciona as novas tags ao regex de split
-            const parts = str.split(/(<ESC>|<GS>|<CR>|<LF>|<NULL>|<EAN13_TYPE_BYTE>|<EAN13_LEN_BYTE>|<CODE128_TYPE_BYTE>)/g).filter(p => p.length > 0);
+            
+            // Regex para capturar comandos e texto (ignora os bytes específicos de EAN que removemos)
+            const parts = str.split(/(<ESC>|<GS>|<CR>|<LF>|<NULL>)/g).filter(p => p.length > 0);
             
             for (const part of parts) {
                 const commandByte = commandMap[part.trim()];
                 
                 if (commandByte !== undefined) {
-                    // É um comando de controle ou byte específico: adiciona o byte hexadecimal
                     byteArrays.push(new Uint8Array([commandByte]));
                 } else {
-                    // É texto ou comando ESC/POS com argumentos (ex: <ESC>a1, <GS>w2)
-                    
                     let remainingText = part;
                     let prefixByte = null;
                     
@@ -761,28 +781,99 @@
             }
         };
 
+
         /**
-         * FUNÇÃO generateEscPosCommands: CORRIGIDA para usar o comando EAN13 padrão: <GS> k 67 13 {dados}
+         * NOVO MÉTODO: Converte a área do código de barras em dados de imagem ESC/POS
+         * @param {number} widthDots - Largura em pontos (72mm = 576 pontos)
+         * @param {number} heightDots - Altura em pontos
+         * @returns {Uint8Array} Byte array com o comando GS v 0 m e o bitmap
          */
-        const generateEscPosCommands = (product, quantity) => {
+        const svgToImageData = async (widthDots = 576, heightDots = 60) => {
+             // Container com o SVG e o texto do EAN
+            const container = document.getElementById('barcode-image-generation-container');
+            
+             // 1. Renderiza o HTML (SVG + texto) para um canvas
+            const canvas = await html2canvas(container, {
+                scale: 1, // Mantém escala 1:1 para pixels mais precisos
+                logging: false,
+                useCORS: true,
+                width: widthDots,
+                height: heightDots,
+            });
+
+            const context = canvas.getContext('2d');
+            const imageData = context.getImageData(0, 0, widthDots, heightDots);
+
+            const dotsPerLine = widthDots; // 576 pontos
+            const byteWidth = Math.ceil(dotsPerLine / 8); // 72 bytes
+
+            let bitmapData = [];
+
+            for (let y = 0; y < heightDots; y++) {
+                let currentByte = 0;
+                let bitCount = 0;
+
+                for (let x = 0; x < dotsPerLine; x++) {
+                    const pixelIndex = (y * dotsPerLine + x) * 4;
+                    // Mapeamento: 0 (preto) é LIGADO, 255 (branco) é DESLIGADO.
+                    // Se o canal vermelho for < 128, consideramos preto.
+                    const isBlack = imageData.data[pixelIndex] < 128; 
+
+                    if (isBlack) {
+                        currentByte |= (0x80 >> bitCount); // Seta o bit
+                    }
+
+                    bitCount++;
+
+                    if (bitCount === 8) {
+                        bitmapData.push(currentByte);
+                        currentByte = 0;
+                        bitCount = 0;
+                    }
+                }
+                 // Se sobrar bits (o que não deve acontecer se widthDots for múltiplo de 8, mas por segurança)
+                if (bitCount > 0) {
+                     bitmapData.push(currentByte);
+                }
+            }
+
+            const dataLength = bitmapData.length;
+            const dataBytes = new Uint8Array(bitmapData);
+
+            // COMANDO ESC/POS GS v 0 (Imprimir imagem raster)
+            // GS v 0 m xL xH yL yH [dados]
+            // m (modo) = 0 (ou 48)
+            // xL, xH = (byteWidth) em 2 bytes
+            // yL, yH = (heightDots) em 2 bytes
+
+            const commandHeader = new Uint8Array([
+                0x1D, 0x76, 0x30, // GS v 0
+                0x00,             // m = 0
+                byteWidth & 0xFF, (byteWidth >> 8) & 0xFF, // xL, xH
+                heightDots & 0xFF, (heightDots >> 8) & 0xFF // yL, yH
+            ]);
+
+            const fullCommand = new Uint8Array(commandHeader.length + dataBytes.length);
+            fullCommand.set(commandHeader, 0);
+            fullCommand.set(dataBytes, commandHeader.length);
+
+            return fullCommand;
+        };
+
+
+        /**
+         * FUNÇÃO generateEscPosCommands: AJUSTADA para usar o código de barras como IMAGEM.
+         */
+        const generateEscPosCommands = async (product, quantity) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
 
-            const eanData = product.EAN || '0000000000000';
-            let barcodeCommand;
-            
-            if (eanData.length === 13) {
-                 // COMANDO EAN13 PADRÃO: <GS> k 67 13 {data} (onde 67 e 13 são bytes)
-                 // Se o EAN for menor, ou não for Code 128, pode falhar. Usamos EAN13 para EANs de 13 dígitos.
-                 barcodeCommand = `<GS>k<EAN13_TYPE_BYTE><EAN13_LEN_BYTE>${eanData}<CR><LF>`;
-            } else {
-                 // Comando de fallback para Code 128 com a sintaxe simplificada (última tentativa funcional)
-                 barcodeCommand = `<GS>k<CODE128_TYPE_BYTE>${eanData}<NULL><CR><LF>`;
-            }
+            // **IMPORTANTE**: Gerar a imagem do código de barras (raster data)
+            // 576 pontos de largura (72mm * 8 pontos/mm)
+            const barcodeImageData = await svgToImageData(576, 60); 
 
-
-            let commands = `
+            let textCommands = `
                 <ESC>@<CR><LF> // Inicializa a impressora
                 <ESC>a1<CR><LF> // Centraliza
                 
@@ -800,23 +891,37 @@
                 EMB: ${product.Embalagem || 'UNIDADE'}<CR><LF>
                 ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}<CR><LF>` : ''}
                 
-                // COMANDO PARA CÓDIGO DE BARRAS (Centraliza novamente)
-                <ESC>a1<CR><LF> // Centraliza 
-                <GS>w2 // Largura do módulo (2 dots)
-                <GS>h50 // Altura da barra (50 dots)
-                
-                ${barcodeCommand}
-
-                <CR><LF><CR><LF> // Linhas em branco finais
-                <GS>V0 // Corta o papel (ou <GS>V1 para corte parcial)
+                // Quebra de linha antes do código de barras em imagem
+                <CR><LF>
             `;
 
-            let fullCommand = '';
+            let textBytes = stringToBytes(textCommands);
+            
+            // Junta os comandos de texto e os dados da imagem (código de barras)
+            const combinedData = new Uint8Array(textBytes.length + barcodeImageData.length);
+            combinedData.set(textBytes, 0);
+            combinedData.set(barcodeImageData, textBytes.length);
+
+            // Comandos Finais
+            const finalCommands = `<CR><LF><CR><LF><GS>V0`;
+            const finalBytes = stringToBytes(finalCommands);
+
+            // Cria o bloco final de bytes para a primeira etiqueta
+            const firstLabelBytes = new Uint8Array(combinedData.length + finalBytes.length);
+            firstLabelBytes.set(combinedData, 0);
+            firstLabelBytes.set(finalBytes, combinedData.length);
+            
+            let fullData = new Uint8Array(0);
+
+            // Repete o bloco de bytes pela quantidade de etiquetas
             for (let i = 0; i < quantity; i++) {
-                fullCommand += commands;
+                const temp = new Uint8Array(fullData.length + firstLabelBytes.length);
+                temp.set(fullData, 0);
+                temp.set(firstLabelBytes, fullData.length);
+                fullData = temp;
             }
 
-            return fullCommand;
+            return fullData;
         };
 
         // FUNÇÃO PRINCIPAL DE IMPRESSÃO (REAL)
@@ -827,7 +932,7 @@
             }
 
             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
-            document.getElementById('print-status').textContent = 'Preparando etiquetas...';
+            document.getElementById('print-status').textContent = 'Preparando etiqueta (Gerando imagem)...';
 
             let connectionResult;
             try {
@@ -835,11 +940,10 @@
             } catch (e) {
                 return; 
             }
-
-            const characteristic = connectionResult.characteristic;
-            const printCommandString = generateEscPosCommands(selectedProduct, quantity);
             
-            const dataToSend = stringToBytes(printCommandString);
+            // Passo 2: Gerar os comandos (agora é assíncrono porque gera a imagem)
+            const dataToSend = await generateEscPosCommands(selectedProduct, quantity);
+            const characteristic = connectionResult.characteristic;
 
             try {
                 document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde)...`;
