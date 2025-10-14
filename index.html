@@ -40,7 +40,6 @@
             vertical-align: top;
             display: inline-block;
             margin-top: -10px;
-            /* Ajuste para aproximar o valor do centavo da vírgula */
             margin-left: 0px; 
         }
         .price-prefix {
@@ -80,24 +79,23 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis globais para o Firebase e dados (agora inicializadas no escopo window)
+        // Variáveis globais para o Firebase e dados
         window.db = null;
         window.auth = null;
-        window.appId = null; // Será preenchido pela config abaixo
+        window.appId = null; 
         window.userId = null;
-        window.allProducts = []; // Inicialização explícita
+        window.allProducts = []; 
 
         // =========================================================================
-        // [CORREÇÃO CRÍTICA DO FIREBASE] - BLOCO CORRIGIDO COM SUAS CHAVES REAIS
-        // Este bloco corrige a inicialização e insere suas chaves reais.
+        // CONFIGURAÇÃO DO FIREBASE (CORRIGIDA)
         // =========================================================================
         const FIREBASE_CONFIG = {
-            // Chaves da sua imagem (image_d48e39.png) inseridas aqui:
-            apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
+            // CRÍTICO: COLOQUE A CHAVE DE API NOVA E VÁLIDA AQUI!
+            apiKey: "SUA_CHAVE_DE_API_ATUALIZADA", 
             authDomain: "coletorprecosapp.firebaseapp.com",
             projectId: "coletorprecosapp",
             storageBucket: "coletorprecosapp.firebasestorage.app",
@@ -120,38 +118,28 @@
             'qtdeetiquetas': 'Qtde_Etiquetas'
         };
 
-        /**
-         * Função auxiliar para normalizar o texto para fins de busca e mapeamento.
-         */
         window.normalizeSearchText = (text) => {
             if (!text) return '';
-            // Remove acentos e caracteres não-alfanuméricos, e converte para minúsculas
             return text.toLowerCase()
                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
                 .replace(/[^a-z0-9]/g, ''); 
         };
 
-        // Função auxiliar para limpar strings de cabeçalho
         const cleanHeader = (header) => {
             if (!header) return '';
             return window.normalizeSearchText(header); 
         };
 
 
-        // Função de inicialização CORRIGIDA
         window.initFirebase = async () => {
             try {
-                // Usa o objeto FIREBASE_CONFIG definido acima, corrigindo o erro de variáveis não-existentes.
                 const firebaseConfig = FIREBASE_CONFIG;
-                const initialAuthToken = null;
 
-                // Validação para garantir que a configuração está presente
                 if (!firebaseConfig || !firebaseConfig.appId || !firebaseConfig.apiKey) {
-                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta. Edite o código-fonte (bloco FIREBASE_CONFIG)!';
+                    document.getElementById('status-message').textContent = 'Erro: Configuração do Firebase ausente ou incompleta.';
                     return;
                 }
                 
-                // Define window.appId usando o valor real da configuração
                 window.appId = firebaseConfig.appId;
 
                 const app = initializeApp(firebaseConfig);
@@ -159,18 +147,14 @@
                 window.auth = getAuth(app);
                 setLogLevel('Debug');
 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(window.auth, initialAuthToken);
-                } else {
-                    // Tenta o login anônimo (que deve estar habilitado no seu Firebase)
-                    await signInAnonymously(window.auth);
-                }
+                // Tenta o login anônimo (agora que as regras e chaves estão corrigidas, deve funcionar)
+                await signInAnonymously(window.auth);
 
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
                 document.getElementById('user-id-display').textContent = `ID do Usuário: ${window.userId}`;
 
                 window.setupProductListener();
-                document.getElementById('status-message').textContent = 'Pronto para carregar dados.'; // MENSAGEM DE SUCESSO!
+                document.getElementById('status-message').textContent = 'Pronto para carregar dados.'; 
 
             } catch (error) {
                 console.error("Erro na inicialização do Firebase:", error);
@@ -178,12 +162,10 @@
             }
         };
 
-        // Função para obter o caminho da coleção de produtos
         window.getProductCollectionPath = () => {
             return `/artifacts/${window.appId}/users/${window.userId}/produtos`;
         };
 
-        // Listener de produtos (CRIA O ÍNDICE DE BUSCA ROBUSTO)
         window.setupProductListener = () => {
             if (!window.db || !window.userId) {
                 return;
@@ -193,11 +175,9 @@
 
             onSnapshot(q, (querySnapshot) => {
                 const products = [];
-                let firstProductEAN = 'N/A';
                 querySnapshot.forEach((doc) => {
                     const productData = doc.data();
                     
-                    // CRIAÇÃO DO ÍNDICE DE BUSCA NORMALIZADO
                     const searchIndex = [
                         window.normalizeSearchText(productData.EAN),
                         window.normalizeSearchText(productData.Descricao_Reduzida),
@@ -205,17 +185,11 @@
                     ].filter(Boolean).join(' ');
 
                     products.push({ ...productData, search_index: searchIndex });
-                    if (firstProductEAN === 'N/A') {
-                        firstProductEAN = productData.EAN;
-                    }
                 });
                 
-                // ATUALIZAÇÃO CRÍTICA: A variável global é atualizada aqui.
                 window.allProducts = products; 
                 
-                console.log(`[Listener Carregado] Total de produtos lidos na memória: ${products.length}. Primeiro EAN lido: ${firstProductEAN}.`); 
                 if (products.length > 0) {
-                    console.log(`[Listener Carregado] Search Index do primeiro produto (EAN: ${firstProductEAN}): ${products[0].search_index}`);
                     document.getElementById('status-message').textContent = 'Busca liberada! Tente pesquisar por EAN ou descrição.';
                 } else {
                     document.getElementById('status-message').textContent = 'Nenhum produto em memória. Carregue o arquivo XLSX.';
@@ -227,7 +201,6 @@
             });
         };
 
-        // Função para processar o CSV/XLSX
         window.processCSV = async (csvText) => {
             const cleanText = csvText.replace(/\r/g, '');
             const lines = cleanText.split('\n').filter(line => line.trim() !== '');
@@ -257,8 +230,7 @@
             
             if (!requiredFields.every(field => foundFields.includes(field))) {
                 const missing = requiredFields.filter(field => !foundFields.includes(field));
-                const errorMessage = `Erro de Mapeamento: Colunas essenciais (${missing.join(', ')}) não foram encontradas.`;
-                console.error("[CSV/XLSX]", errorMessage, "Cabeçalhos encontrados:", foundFields);
+                const errorMessage = `Colunas essenciais (${missing.join(', ')}) não encontradas.`;
                 document.getElementById('upload-status').textContent = `Falha na Leitura: ${errorMessage}`;
                 return [];
             }
@@ -283,7 +255,6 @@
                     if (fieldName === 'EAN') {
                          product[fieldName] = rawValue.replace(/\D/g, '');
                     } else if (fieldName === 'Preco_Normal' || fieldName === 'Preco_Promocao') {
-                         // Corrigindo a substituição de vírgula por ponto para parsing correto
                          product[fieldName] = parseFloat(rawValue.replace(',', '.')) || 0;
                     } else if (fieldName === 'Qtde_Etiquetas') {
                          product[fieldName] = parseInt(rawValue) || 1;
@@ -299,7 +270,6 @@
             return data;
         };
 
-        // Função para subir os dados para o Firestore (Usando EAN como ID)
         window.uploadDataToFirestore = async (products) => {
             if (!window.db) {
                 document.getElementById('upload-status').textContent = 'Erro: Firebase não inicializado.';
@@ -313,7 +283,6 @@
             const collectionPath = window.getProductCollectionPath();
             const batch = writeBatch(window.db);
             let successCount = 0;
-            const firstEAN = products[0].EAN;
 
             for (const product of products) {
                 if (product.EAN) {
@@ -325,22 +294,11 @@
 
             try {
                 await batch.commit();
-                console.log(`[UPLOAD SUCESSO] Lote de ${successCount} produtos enviado para o Firestore.`);
-                
-                // VERIFICAÇÃO IMEDIATA PÓS-UPLOAD (DEBUG)
-                const docRef = doc(window.db, collectionPath, firstEAN);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    console.log(`[VERIFICAÇÃO PÓS-UPLOAD] Produto encontrado no Firestore. EAN: ${firstEAN}.`);
-                } else {
-                    console.error(`[VERIFICAÇÃO PÓS-UPLOAD] ERRO: O produto com EAN ${firstEAN} NÃO foi encontrado.`);
-                }
-                
                 document.getElementById('upload-status').textContent = `Sucesso: ${successCount} produtos importados! Tente a busca abaixo.`;
                 document.getElementById('search-input').focus();
             } catch (error) {
                 console.error("Erro ao subir dados para o Firestore:", error);
+                // O erro de permissão deve ser resolvido, mas mantemos o feedback
                 document.getElementById('upload-status').textContent = `Erro ao salvar dados: ${error.message}`;
             }
         };
@@ -356,7 +314,7 @@
         <p id="status-message" class="text-sm text-gray-700 mb-4 font-medium">Iniciando Firebase...</p>
 
         <div class="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados do CSV/XLSX (Etiquetas a Emitir)</h2>
+            <h2 class="text-xl font-semibold text-blue-700 mb-3">1. Carregar Dados do CSV/XLSX</h2>
             <input type="file" id="csv-file-input" accept=".csv, .xls, .xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"/>
             <p id="upload-status" class="text-sm mt-2 text-gray-600">Selecione o arquivo CSV ou **XLSX** para salvar os produtos.</p>
         </div>
@@ -391,7 +349,7 @@
                     <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
                     <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg mb-4"/>
                     <button onclick="printLabels()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md">
-                        Imprimir Etiquetas (via Bluetooth - Simulado)
+                        Imprimir Etiquetas (Web Bluetooth)
                     </button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
                 </div>
@@ -404,17 +362,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="mt-8 p-4 border border-red-300 bg-red-50 rounded-lg">
-            <h2 class="text-xl font-semibold text-red-700 mb-2">3. Como a Impressão Bluetooth Funcionaria:</h2>
-            <p class="text-sm text-red-600">
-                A conexão com impressoras Bluetooth (e o envio de comandos como **ESC/POS**) é um recurso avançado que **requer permissões de navegador (Web Bluetooth API)** e não pode ser totalmente executado neste ambiente isolado.
-            </p>
-            <p class="text-sm text-red-600 mt-2">
-                O código gerado abaixo (**`printLabels()`**) **simula** a etapa de conexão e geração do comando, focando na lógica de negócios e no design da etiqueta.
-            </p>
-        </div>
-
     </main>
 
     <div id="scanner-modal" class="scanner-modal hidden">
@@ -432,7 +379,7 @@
         let videoStream = null;
         let barcodeInterval = null;
         
-        // ---------------------- Lógica de Upload (Apenas Event Listener) ----------------------
+        // ---------------------- Lógica de Upload (Event Listener) ----------------------
 
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -456,27 +403,21 @@
                         const worksheet = workbook.Sheets[sheetName];
                         
                         processedText = XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
-                        
-                        console.log(`[XLSX Converter] Arquivo Excel convertido para CSV com delimitador ';'.`);
-
                     } catch (error) {
-                        console.error("Erro ao processar arquivo Excel:", error);
                         document.getElementById('upload-status').textContent = 'Erro ao ler arquivo Excel. Verifique a formatação.';
                         return;
                     }
                 } else {
                     processedText = e.target.result;
-                    console.log(`[CSV Reader] Arquivo CSV lido.`);
                 }
                 
                 if (processedText) {
                     document.getElementById('upload-status').textContent = 'Processando e salvando dados no Firestore...';
-                    // Chama a função global definida no módulo
                     const products = await window.processCSV(processedText); 
                     if(products.length > 0) {
                        await window.uploadDataToFirestore(products);
                     } else {
-                       document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado no arquivo (verifique o EAN e os cabeçalhos no console).';
+                       document.getElementById('upload-status').textContent = 'Nenhum produto válido encontrado.';
                     }
                 }
             };
@@ -488,7 +429,7 @@
             }
         });
 
-        // ---------------------- Lógica de Busca e Seleção (Usando o Search Index) ----------------------
+        // ---------------------- Lógica de Busca e Seleção ----------------------
 
         const searchProduct = () => {
             const rawQuery = document.getElementById('search-input').value;
@@ -499,11 +440,10 @@
             selectedProduct = null;
             updateSelectionUI();
 
-            // CRÍTICO: Garantir que a lista de produtos é lida do escopo global (window)
             const productsInCurrentMemory = window.allProducts || []; 
 
             if (productsInCurrentMemory.length === 0) {
-                 resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Erro: Lista de produtos vazia. Recarregue a página ou faça o upload.</p>';
+                 resultsDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Lista de produtos vazia. Faça o upload.</p>';
                  return;
             }
 
@@ -512,14 +452,13 @@
                 return;
             }
             
-            // FILTRO AVANÇADO: usa o índice pré-calculado
             const filtered = productsInCurrentMemory.filter(p => {
                 return p.search_index && p.search_index.includes(normalizedQuery);
             }).slice(0, 10); 
 
 
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado. Tente pesquisar apenas uma palavra ou EAN exato.</p>';
+                resultsDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Nenhum produto encontrado.</p>';
                 return;
             }
 
@@ -576,19 +515,14 @@
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
             const normalPrice = product.Preco_Normal;
 
-            // FIX: Usa Intl.NumberFormat com useGrouping: false para garantir que:
-            // 1. O separador decimal seja sempre a vírgula (pt-BR).
-            // 2. Não haja separador de milhares (ponto), o que garante uma quebra limpa do preço.
             const formattedPrice = new Intl.NumberFormat('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-                useGrouping: false // Desabilita o separador de milhares
+                useGrouping: false 
             }).format(finalPrice);
 
-            // A vírgula sempre estará presente e será o único separador decimal.
             const [reais, centavos] = formattedPrice.split(',');
             
-            // Gerar um ID único para o SVG do código de barras, para garantir a renderização
             const barcodeSvgId = `barcode-ean-${product.EAN}-${Date.now()}`; 
 
             labelDiv.innerHTML = `
@@ -621,21 +555,11 @@
                 </div>
             `;
             
-            // CHAMADA DA BIBLIOTECA JSBARCODE para desenhar o código de barras
-            if (product.EAN && product.EAN.length === 13) {
+            if (product.EAN) {
+                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
                  JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: "EAN13",
-                     displayValue: false, // Oculta o número para priorizar o espaço
-                     width: 1.5,
-                     height: 35,
-                     margin: 0,
-                     textMargin: 0
-                 });
-            } else if (product.EAN) {
-                 // Caso o EAN não seja 13 dígitos, tenta renderizar como Code128, que é mais flexível
-                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
-                     format: "CODE128",
-                     displayValue: false,
+                     format: format,
+                     displayValue: false, 
                      width: 1.5,
                      height: 35,
                      margin: 0,
@@ -644,22 +568,19 @@
             }
         };
 
-        // ---------------------- Lógica do Scanner de Código de Barras ----------------------
+        // ---------------------- Lógica do Scanner (Camera) ----------------------
         
         const scannerVideo = document.getElementById('scanner-video');
         const scannerModal = document.getElementById('scanner-modal');
         const scannerFeedback = document.getElementById('scanner-feedback');
-        let barcodeDetector = null; // Instância do BarcodeDetector
-        let track = null; // Rastreia a mídia (câmera)
+        let barcodeDetector = null; 
+        let videoStreamTrack = null; 
 
-        // Inicializa o BarcodeDetector (se suportado)
         if ('BarcodeDetector' in window) {
             try {
-                // Tentativa de criar o detector
                 barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8'] });
                 document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
             } catch (error) {
-                console.error("BarcodeDetector falhou ao inicializar:", error);
                 document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
             }
         } else {
@@ -673,23 +594,19 @@
 
                     if (barcodes.length > 0) {
                         const ean = barcodes[0].rawValue;
-                        console.log(`[SCANNER] Código detectado: ${ean}`);
                         scannerFeedback.textContent = `Código lido: ${ean}`;
                         
-                        // Processa o EAN lido
                         document.getElementById('search-input').value = ean;
                         stopBarcodeScanner();
-                        searchProduct(); // Executa a busca
+                        searchProduct(); 
                         return;
                     } else {
                          scannerFeedback.textContent = 'Procurando código de barras...';
                     }
                 } catch (err) {
-                    console.error("[SCANNER] Erro ao detectar barcode:", err);
                     scannerFeedback.textContent = 'Erro de detecção. Tente novamente.';
                 }
             }
-            // Chama a si mesma no próximo frame
             requestAnimationFrame(scanFrame);
         };
 
@@ -703,26 +620,20 @@
             scannerFeedback.textContent = 'Iniciando câmera...';
 
             try {
-                // Tenta acessar a câmera traseira primeiro
-                videoStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment' // Câmera traseira
-                    } 
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
                 });
                 
-                track = videoStream.getVideoTracks()[0];
-                scannerVideo.srcObject = videoStream;
+                videoStreamTrack = stream.getVideoTracks()[0];
+                scannerVideo.srcObject = stream;
                 scannerVideo.play();
                 
                 scannerFeedback.textContent = 'Câmera iniciada. Aponte para o código de barras.';
 
-                // Inicia o ciclo de detecção de código de barras
                 scanFrame(); 
 
             } catch (err) {
-                console.error("[SCANNER] Erro ao acessar a câmera:", err);
                 scannerFeedback.textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
-                // Fecha o modal em caso de falha
                 setTimeout(stopBarcodeScanner, 3000); 
             }
         };
@@ -730,54 +641,110 @@
         window.stopBarcodeScanner = () => {
             scannerModal.classList.add('hidden');
             
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
+            if (scannerVideo.srcObject) {
+                scannerVideo.srcObject.getTracks().forEach(track => track.stop());
+                scannerVideo.srcObject = null;
             }
-            if (track) {
-                track = null;
+            if (videoStreamTrack) {
+                videoStreamTrack = null;
             }
-            scannerVideo.srcObject = null;
         };
 
-        // ---------------------- Lógica de Impressão (Simulação) ----------------------
+        // ---------------------- Lógica de IMPRESSÃO BLUETOOTH REAL ----------------------
+        
+        let connectedDevice = null;
+        let printerGattServer = null;
 
+        // Função utilitária para converter a string de comando ESC/POS em bytes
+        const stringToBytes = (str) => {
+            // A impressora térmica espera caracteres de controle, não o texto '<ESC>'.
+            // Substituímos os placeholders por seus caracteres ASCII/Hex (que o TextEncoder entenderá)
+            const commands = str
+                .replace(/<ESC>/g, '\x1B') // ESCAPE (0x1B)
+                .replace(/<GS>/g, '\x1D')  // GROUP SEPARATOR (0x1D)
+                .replace(/<CR>/g, '\x0D')  // CARRIAGE RETURN
+                .replace(/<LF>/g, '\x0A'); // LINE FEED
+            
+            return new TextEncoder().encode(commands);
+        };
+
+
+        // FUNÇÃO PARA ENVIAR DADOS (com chunking para estabilidade)
+        const sendDataToPrinter = async (characteristic, data) => {
+            const CHUNK_SIZE = 512; 
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                await characteristic.writeValueWithoutResponse(chunk);
+                // Pequena pausa (opcional, mas recomendada)
+                await new Promise(resolve => setTimeout(resolve, 50)); 
+            }
+        };
+
+        // FUNÇÃO PARA CONECTAR À IMPRESSORA
         const connectToPrinter = async () => {
             document.getElementById('print-status').textContent = 'Tentando conectar à impressora Bluetooth...';
-            // Simulação de conexão. Em um ambiente real, você usaria navigator.bluetooth.requestDevice.
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    document.getElementById('print-status').textContent = 'Simulação de Conexão: Sucesso.';
-                    resolve({ name: "Simulação de Impressora Bluetooth", isConnected: true });
-                }, 1000);
-            });
+            
+            // UUIDs Comuns para Impressoras Térmicas (Pode ser necessário adaptar)
+            const serviceUuid = '000018f0-0000-1000-8000-00805f9b34fb'; 
+            const characteristicUuid = '00002af1-0000-1000-8000-00805f9b34fb'; 
+
+            try {
+                connectedDevice = await navigator.bluetooth.requestDevice({
+                    // Tenta filtrar pelo UUID de serviço
+                    filters: [{ services: [serviceUuid] }], 
+                    // Se falhar, use acceptAllDevices: true para ver todos os dispositivos
+                    // acceptAllDevices: true,
+                    optionalServices: [serviceUuid]
+                });
+
+                document.getElementById('print-status').textContent = `Conectando a ${connectedDevice.name}...`;
+
+                printerGattServer = await connectedDevice.gatt.connect();
+                const service = await printerGattServer.getPrimaryService(serviceUuid);
+                const characteristic = await service.getCharacteristic(characteristicUuid);
+
+                document.getElementById('print-status').textContent = `Conexão bem-sucedida com ${connectedDevice.name}!`;
+                return { isConnected: true, characteristic: characteristic };
+
+            } catch (error) {
+                console.error("Erro na conexão Bluetooth:", error);
+                const errorMessage = error.message.includes('User cancelled') ? 'Conexão cancelada.' : 'Erro de Conexão: Verifique o Bluetooth e as permissões.';
+                document.getElementById('print-status').textContent = errorMessage;
+                throw error;
+            }
         };
 
+        // FUNÇÃO PARA GERAR COMANDOS ESC/POS (Mapeado para bytes na função stringToBytes)
         const generateEscPosCommands = (product, quantity) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
             const finalPrice = isPromo ? product.Preco_Promocao : product.Preco_Normal;
-            // Garantindo que a vírgula é usada na string de comando (já estava correto)
             const priceText = finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
 
+            // \x1B e \x1D serão convertidos para bytes na função stringToBytes
             let commands = `
-                // --- INÍCIO DO LOTE DE IMPRESSÃO (QTY: ${quantity}) ---
-                <ESC>@
-                <ESC>a<1>
-                ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
-                ----------
-                <ESC>!C<ESC>-1 
-                R$ ${priceText}
-                <ESC>!<0>
-                ----------
-                EMB: ${product.Embalagem || 'UNIDADE'}
-                ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}` : ''}
+                <ESC>@ // Inicializa a impressora
+                <ESC>a1 // Centraliza
                 
-                // Comando para CÓDIGO DE BARRAS (Simulação de ESC/POS)
-                <GS>k<02><${product.EAN}><00> 
+                ${(product.Descricao_Reduzida || product.Produto).toUpperCase()}
+                
+                <CR><LF>
+                <ESC>!C // Tamanho da fonte grande (ajuste para sua impressora)
+                R$ ${priceText}
+                <ESC>!0 // Volta para o tamanho normal
+                
+                <CR><LF>
+                EMB: ${product.Embalagem || 'UNIDADE'}
+                <CR><LF>
+                ${isPromo ? `OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}<CR><LF>` : ''}
+                
+                // Comando para CÓDIGO DE BARRAS (Gera um Code 128 com altura e largura)
+                <GS>w2 // Largura do módulo
+                <GS>h50 // Altura da barra
+                <GS>kC<${product.EAN}> // Code 128 com dados
+                <CR><LF><CR><LF>
 
-                <CR><LF><CR><LF><CR><LF>
-                <GS>V<0>
-                // --- FIM DA ETIQUETA ---
+                <GS>V0 // Corta o papel
+                <CR><LF>
             `;
 
             let fullCommand = '';
@@ -788,6 +755,7 @@
             return fullCommand;
         };
 
+        // FUNÇÃO PRINCIPAL DE IMPRESSÃO (REAL)
         const printLabels = async () => {
             if (!selectedProduct) {
                 document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
@@ -797,23 +765,44 @@
             const quantity = parseInt(document.getElementById('label-qty').value) || 1;
             document.getElementById('print-status').textContent = 'Preparando etiquetas...';
 
-            const printer = await connectToPrinter();
+            let connectionResult;
+            try {
+                // 1. Conecta (Isto abrirá a janela de seleção de dispositivos)
+                connectionResult = await connectToPrinter();
+            } catch (e) {
+                // Se a conexão falhar (cancelada ou erro), sai
+                return; 
+            }
 
-            const printCommand = generateEscPosCommands(selectedProduct, quantity);
+            const characteristic = connectionResult.characteristic;
+            const printCommandString = generateEscPosCommands(selectedProduct, quantity);
+            
+            // 2. Converte a string de comando (com ESC/GS) em bytes
+            const dataToSend = stringToBytes(printCommandString);
 
-            console.log("--- COMANDOS ESC/POS GERADOS (SIMULAÇÃO) ---");
-            console.log(printCommand);
-            console.log("---------------------------------------------");
+            try {
+                document.getElementById('print-status').textContent = `Enviando ${quantity} etiquetas (aguarde)...`;
+                
+                // 3. Envia os dados em chunks
+                await sendDataToPrinter(characteristic, dataToSend);
 
-            document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-            document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas (SIMULADO). Verifique o console.`;
-            setTimeout(() => {
-                document.getElementById('print-status').className = 'text-xs mt-2 text-red-500';
-                document.getElementById('print-status').innerHTML = '';
-            }, 5000);
+                document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
+                document.getElementById('print-status').innerHTML = `✅ ${quantity} Etiquetas enviadas para impressão.`;
+            } catch (error) {
+                console.error("Erro ao enviar dados para a impressora:", error);
+                document.getElementById('print-status').className = 'text-sm mt-2 text-red-600 font-bold';
+                document.getElementById('print-status').innerHTML = `❌ Erro de Envio: ${error.message}`;
+            } finally {
+                // 4. Desconecta (Importante para liberar o recurso)
+                if (printerGattServer && printerGattServer.connected) {
+                    printerGattServer.disconnect();
+                    connectedDevice = null;
+                    printerGattServer = null;
+                }
+            }
         };
 
-        // Chama a função de inicialização do Firebase ao carregar o script
+        // Inicializa o Firebase ao carregar a página
         window.onload = () => {
             window.initFirebase();
         };
