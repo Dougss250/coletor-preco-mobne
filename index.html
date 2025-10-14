@@ -22,66 +22,76 @@
             width: 377px; 
             /* 30mm de altura. */
             height: 113px; 
-            padding: 2px 5px; /* Padding reduzido para maximizar o espaço */
+            padding: 3px 6px; /* Ajustado para 3px topo/base e 6px laterais */
             box-sizing: border-box;
             background: white;
-            border: 1px solid #000; /* Borda fina e reta */
+            border: 1px solid #000; 
             display: flex;
             flex-direction: column;
             justify-content: space-between; 
             overflow: hidden;
             font-size: 10px;
         }
+
+        /* ------------------ SEÇÃO SUPERIOR (PRODUTO) ------------------ */
+        .product-name {
+            font-size: 14px; /* Tamanho bom para 100mm */
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.1;
+            margin-bottom: -5px; /* Puxa o preço para cima */
+        }
         
-        /* Preço: Alinhamento e Tamanho em Destaque */
+        /* ------------------ SEÇÃO CENTRAL (PREÇO) ------------------ */
         .price-row {
-             /* Ocupa o máximo de espaço vertical disponível para o preço dominar */
+             /* Ocupa o máximo de espaço para o preço dominar */
              flex-grow: 1; 
              display: flex;
-             align-items: center; /* Centraliza verticalmente o preço */
-             justify-content: flex-end; /* Alinha o preço à direita */
-             padding-right: 5px; 
+             align-items: flex-end; /* Alinha o bloco de preço na parte inferior do seu espaço */
+             justify-content: flex-end; 
+             height: 55px; /* Altura controlada para o preço */
         }
+        
         .price-prefix {
-            font-size: 40px; /* R$ */
+            font-size: 35px; /* R$ */
             font-weight: 700;
             line-height: 1;
             align-self: flex-start; /* Alinha o R$ no topo do bloco de preço */
-            margin-top: 10px; /* Ajuste fino */
+            margin-top: 5px; /* Ajuste fino */
         }
         .price-display {
-            font-size: 100px; /* Reais: MAIOR DE TODOS */
+            font-size: 85px; /* Reais: MAIOR DE TODOS (Ajustado para caber) */
             font-weight: 900;
-            line-height: 1;
+            line-height: 0.9; /* Altura de linha apertada para não estourar */
             color: #000;
         }
         .price-cents {
-            font-size: 50px; /* Centavos */
+            font-size: 40px; /* Centavos */
             font-weight: 800;
-            line-height: 1.2;
+            line-height: 1;
             align-self: flex-start; /* Alinha os centavos no topo */
-            margin-top: 10px; /* Ajuste fino */
+            margin-top: 5px; /* Ajuste fino */
         }
 
-        /* Container do Código de Barras (Linha Inferior) */
+        /* ------------------ SEÇÃO INFERIOR (CÓDIGO DE BARRAS) ------------------ */
         .barcode-row {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
             width: 100%;
-            margin-top: -5px; /* Puxa para cima para economizar espaço */
+            margin-top: -3px; 
         }
         .barcode-row svg {
              width: 85%; 
              max-width: 300px; 
-             height: 35px; /* Altura ideal para 100mm */
-             margin-bottom: 0px;
+             height: 30px; /* Altura ideal */
         }
         .barcode-ean-text {
-             font-size: 12px;
+             font-size: 10px; /* Texto do EAN menor e discreto */
              font-weight: 700;
-             margin-top: -3px;
+             margin-top: 0px; 
+             margin-bottom: 2px;
         }
         
         /* Estilos do Scanner (Manter) */
@@ -125,7 +135,7 @@
             projectId: "coletorprecosapp",
             storageBucket: "coletorprecosapp.firebasestorage.app",
             messagingSenderId: "127089195149",
-            appId: "1:127089195149:web:3d2c8205cf8fb999999ac4" // (Ajuste se o seu ID mudou)
+            appId: "1:127089195149:web:3d2c8205cf8fb999999ac4" 
         };
 
         const INTERNAL_HEADER_MAP = {
@@ -545,19 +555,20 @@
             // 1. Montar o Preview Visível (com novo layout)
             labelDiv.innerHTML = `
                 <div class="gondola-label" id="label-for-canvas">
-                    <div class="text-left leading-tight mt-1">
-                        <p class="font-extrabold uppercase text-base text-black">${product.Descricao_Reduzida || product.Produto}</p>
+                    <div class="text-left leading-tight">
+                        <p class="product-name text-black">${product.Descricao_Reduzida || product.Produto}</p>
                     </div>
 
                     <div class="price-row">
                         ${isPromo ? `
-                            <p class="text-xs text-red-500 font-semibold absolute top-1/2 left-4 transform -translate-y-1/2">
+                            <p class="text-xs text-red-500 font-semibold absolute left-1/4 top-[20px] transform -translate-x-1/2">
                                 DE R$ ${normalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                         ` : ''}
+                        
                         <span class="price-prefix font-bold text-black">R$</span>
                         <span class="price-display text-black">${reais}</span>
-                        <span class="text-7xl font-extrabold text-black">,</span> 
+                        <span class="text-5xl font-extrabold text-black line-height-1">,</span> 
                         <span class="price-cents text-black">${centavos}</span>
                     </div>
 
@@ -566,7 +577,7 @@
                             <svg id="${barcodeSvgId}"></svg>
                         </div>
                         <p class="barcode-ean-text text-black">${product.EAN} ${product.Embalagem ? ' | ' + product.Embalagem : ''}</p>
-                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold mt-0.5">OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
+                        ${isPromo && product.Promocao_ate ? `<p class="text-xs text-red-500 font-semibold leading-none">OFERTA VÁLIDA ATÉ ${product.Promocao_ate.substring(0, 10)}</p>` : ''}
                     </div>
                 </div>
             `;
@@ -576,9 +587,9 @@
                 const format = product.EAN.length === 13 ? "EAN13" : "CODE128";
                 JsBarcode(`#${barcodeSvgId}`, product.EAN, {
                     format: format,
-                    displayValue: false, // O EAN é exibido logo abaixo, fora do SVG, para maior controle
+                    displayValue: false, 
                     width: 1.5,
-                    height: 35, 
+                    height: 30, 
                     margin: 0,
                     textMargin: 0
                 });
