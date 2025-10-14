@@ -21,13 +21,13 @@
             /* 100MM x 30MM em 96 DPI -> 377px x 113px */
             width: 377px; 
             height: 113px; 
-            padding: 2px; /* Margem interna de ~2mm */
+            padding: 4px; 
             box-sizing: border-box;
             background: white;
-            border: 1px solid #000;
+            border: 1px solid #000; 
             overflow: hidden;
-            /* Divisão de layout: 25px para o Nome, o resto para a área inferior */
             display: grid;
+            /* Dividido em duas linhas: 25px para o nome, e 1fr (o restante) para a área inferior */
             grid-template-rows: 25px 1fr; 
         }
         
@@ -35,12 +35,13 @@
         .product-name-area {
             grid-row: 1;
             display: flex;
-            align-items: flex-start; /* Alinha o texto do nome ao topo da área */
-            padding-left: 2px; 
+            align-items: center;
+            justify-content: flex-start; /* Alinha o texto à esquerda */
             text-align: left;
             width: 100%;
-            height: 25px; /* Limita a altura para o Nome */
+            height: 25px; 
             overflow: hidden;
+            padding-left: 2px;
         }
         .product-name {
             font-size: 15px; 
@@ -48,11 +49,11 @@
             text-transform: uppercase;
             line-height: 1.1;
             color: #000;
-            /* CORREÇÃO: Permite quebra de linha (normal) e usa -webkit-line-clamp para limitar */
+            /* CORREÇÃO: Permite quebra de linha se necessário, mas oculta o que exceder */
             white-space: normal; 
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas */
+            -webkit-line-clamp: 2; /* Limita a 2 linhas, se houver espaço */
             -webkit-box-orient: vertical;
         }
 
@@ -60,40 +61,40 @@
         .bottom-row {
             grid-row: 2;
             display: flex;
-            align-items: stretch; 
+            align-items: center; /* Alinha verticalmente todo o bloco ao centro */
+            /* Garante que o conteúdo fique mais na parte inferior da etiqueta */
+            padding-top: 2px; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (60% da largura) */
+        /* 2.1. CÓDIGO DE BARRAS (60% da largura - CORRIGIDO) */
         .barcode-area {
             width: 60%; 
             display: flex;
             flex-direction: column;
-            align-items: flex-start; 
-            justify-content: flex-end; /* Alinha o bloco do código/EAN à parte inferior */
-            padding-left: 2px;
+            align-items: center; /* Centraliza o código e o texto EAN */
+            justify-content: center;
             height: 100%;
+            padding-left: 2px; 
         }
         .barcode-container {
-             width: 100%;
+             width: 95%; /* Ajuste para não colar na borda, mantendo o svg mais contido */
              display: flex;
-             height: 50px; /* Altura do código de barras */
-             align-items: flex-end; 
+             height: 50px; 
+             margin-top: -5px; /* Puxa o código de barras ligeiramente para cima */
         }
         .barcode-container svg {
-             width: 98%; /* Para garantir que o EAN abaixo fique alinhado */
+             width: 100%;
              height: 50px; 
-             margin-left: -1px; /* Ajuste fino */
         }
         .ean-text {
             font-size: 10px;
             font-weight: 700;
             line-height: 1;
-            color: #000;
-            /* CORREÇÃO: Centralizado horizontalmente em relação ao código */
-            text-align: center; 
-            width: 100%; 
             margin-top: 1px;
-            padding-right: 5px; /* Ajuste fino para centralizar com o svg */
+            color: #000;
+            /* CORREÇÃO: Centraliza o número EAN sob o código de barras */
+            text-align: center; 
+            width: 100%;
         }
 
         /* 2.2. PREÇO (40% da largura - CORRIGIDO) */
@@ -102,19 +103,17 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end; 
-            /* Alinha o preço verticalmente */
             justify-content: center; 
             padding-right: 4px;
-            height: 100%; 
+            height: 100%;
             position: relative;
         }
         
         .price-wrapper {
             display: flex;
-            /* CORREÇÃO: Alinha o R$ e o valor pela linha de base do texto */
             align-items: baseline; 
             line-height: 1;
-            /* CORREÇÃO: Ajuste vertical para posicionar o preço mais para cima na área */
+            /* AJUSTE FINO: Puxa o preço ligeiramente para cima para dar destaque */
             margin-top: -5px; 
         }
         .price-prefix {
@@ -144,7 +143,7 @@
         /* Estilos de Promoção */
         .promo-info {
             position: absolute;
-            top: 2px; 
+            top: 0; 
             right: 4px;
             font-size: 10px;
             font-weight: 700;
@@ -162,13 +161,14 @@
             line-height: 1;
         }
 
-        /* Classes auxiliares para impressão de imagem */
+        /* 2. ADICIONADO: Div Oculta para Renderização da Imagem de Impressão */
         .print-image-container {
             position: fixed;
-            top: -9999px; /* Oculta o div */
+            top: -9999px; 
             left: -9999px;
             z-index: -1;
         }
+
         /* Estilos do Scanner Modal (Manter) */
         .scanner-modal {
             position: fixed;
@@ -395,7 +395,7 @@
         let videoStream = null;
         let scanInterval = null; 
 
-        // ---------------------- 1. LÓGICA DE UPLOAD ----------------------
+        // ---------------------- 1. LÓGICA DE UPLOAD (MANTIDA) ----------------------
         document.getElementById('csv-file-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -431,7 +431,7 @@
             else reader.readAsText(file);
         });
 
-        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO ----------------------
+        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO (MANTIDA) ----------------------
 
         const searchProduct = () => {
             const rawQuery = document.getElementById('search-input').value;
@@ -502,7 +502,7 @@
             }
         };
 
-        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (CORRIGIDA) ----------------------
+        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (MANTIDA E AJUSTADA) ----------------------
 
         const generateLabelContent = (product, elementId) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
@@ -640,7 +640,7 @@
             document.getElementById('scanner-video').srcObject = null;
         };
         
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (GERAÇÃO DE IMAGEM RESTAURADA) ----------------------
+        // ---------------------- 5. LÓGICA DE IMPRESSÃO (GERAÇÃO DE IMAGEM CORRIGIDA) ----------------------
 
         const printLabels = async () => {
              if (!selectedProduct) {
@@ -666,23 +666,29 @@
              try {
                 // Aumenta a escala para alta resolução para impressão
                 const canvas = await html2canvas(labelElement, { 
-                    scale: 3, 
+                    scale: 3, // Aumentar a escala para 3x (300dpi de um elemento de 96dpi é bom)
                     useCORS: true, 
                     allowTaint: true 
                 });
                 
                 const imageDataURL = canvas.toDataURL('image/png');
                 
-                // 4. Cria o log de impressão e a imagem de preview para debug/download
-                console.log(`✅ Imagem da Etiqueta Gerada para Impressão Externa (PNG Data URL):`);
-                console.log(imageDataURL);
+                // 4. Cria o link de download e a mensagem de sucesso
+                const downloadLink = document.createElement('a');
+                downloadLink.href = imageDataURL;
+                downloadLink.download = `${selectedProduct.EAN}_etiqueta_x${quantity}.png`;
                 
                 document.getElementById('print-status').className = 'text-sm mt-2 text-green-600 font-bold';
-                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para ver/baixar:<br><a href="${imageDataURL}" download="${selectedProduct.EAN}_etiqueta.png" class="text-blue-500 underline text-xs">Baixar Imagem para App de Impressão</a>`;
-
-                // 5. Simula o envio de N cópias (a imagem deve ser salva/enviada para o app externo aqui)
+                document.getElementById('print-status').innerHTML = `✅ ${quantity} Imagem(ns) Gerada(s). Clique abaixo para ver/baixar:<br>`;
+                document.getElementById('print-status').appendChild(downloadLink);
+                downloadLink.textContent = 'Baixar Imagem da Etiqueta';
+                downloadLink.className = 'text-blue-500 underline text-xs block mt-1';
+                
+                // 5. Simula o envio de N cópias
+                console.log(`✅ Imagem da Etiqueta Gerada para Impressão Externa (PNG Data URL):`);
+                console.log(imageDataURL.substring(0, 100) + '...');
                 for (let i = 0; i < quantity; i++) {
-                    console.log(`[SIMULAÇÃO] Copia ${i + 1}/${quantity}. O usuário deve usar o App de Impressão para abrir e imprimir a imagem.`);
+                    console.log(`[SIMULAÇÃO] Copia ${i + 1}/${quantity}. Use o App de Impressão (Ex: PrintShare) para abrir e imprimir a imagem PNG.`);
                 }
 
              } catch (error) {
