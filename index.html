@@ -250,6 +250,89 @@
             return window.normalizeSearchText(header); 
         };
 
+        // --- INÍCIO DA NOVA LÓGICA DE CORREÇÃO (25 CARACTERES) ---
+        const MAX_LENGTH = 25;
+
+        const generateReducedDescription = (productName) => {
+            if (!productName) return '';
+
+            // 1. Remove a referência numérica final (e.g., " - 927476")
+            let cleanedName = String(productName).toUpperCase().trim();
+            cleanedName = cleanedName.replace(/\s-\s\d+$/, '');
+
+            // 2. Remove "DE" e "DA" (case-insensitive) e divide em palavras
+            let words = cleanedName.split(/\s+/).filter(Boolean);
+            let filteredWords = words.filter(word => !["DE", "DA"].includes(word));
+
+            if (filteredWords.length === 0) {
+                return '';
+            }
+
+            let firstWord = filteredWords[0];
+            let middleWords = filteredWords.slice(1, -1);
+            let lastWord = filteredWords.length > 1 ? filteredWords[filteredWords.length - 1] : '';
+
+            // Estrutura inicial: [primeira palavra, ...meio, última palavra]
+            let currentDescList = [firstWord, ...middleWords, lastWord].filter(Boolean);
+
+            const getCurrentDesc = (list) => list.join(' ');
+            
+            let currentDescStr = getCurrentDesc(currentDescList);
+            if (currentDescStr.length <= MAX_LENGTH) {
+                return currentDescStr;
+            }
+            
+            // 4. Abreviar palavras do meio (apenas se houver mais de duas palavras)
+            let middleIndices = [];
+            if (currentDescList.length > 2) {
+                for (let i = 1; i < currentDescList.length - 1; i++) {
+                    middleIndices.push(i);
+                }
+            }
+            
+            let shortenableWordsInfo = middleIndices.map(i => ({
+                index: i,
+                length: currentDescList[i].length,
+                original: currentDescList[i]
+            }));
+            
+            // Ordena pela maior palavra para tentar reduções mais eficazes primeiro
+            shortenableWordsInfo.sort((a, b) => b.length - a.length);
+
+            for (const info of shortenableWordsInfo) {
+                let wordToShorten = currentDescList[info.index];
+                
+                // Estratégia 1: 4 letras + ponto (e.g., 'MURIATICO' -> 'MURI.')
+                if (wordToShorten.length > 4) {
+                    currentDescList[info.index] = wordToShorten.substring(0, 4) + '.';
+                    currentDescStr = getCurrentDesc(currentDescList);
+                    if (currentDescStr.length <= MAX_LENGTH) {
+                        return currentDescStr;
+                    }
+                }
+                
+                // Estratégia 2: 1 letra + ponto (e.g., 'MURIATICO' -> 'M.')
+                currentDescList[info.index] = wordToShorten.substring(0, 1) + '.';
+                currentDescStr = getCurrentDesc(currentDescList);
+                if (currentDescStr.length <= MAX_LENGTH) {
+                    return currentDescStr;
+                }
+            }
+
+            // Fallback final: Se ainda estiver acima do limite, usa o resultado da redução mais agressiva.
+            if (currentDescStr.length > MAX_LENGTH) {
+                // Último recurso: tentar remover todo o meio e usar apenas a primeira e a última palavra
+                let finalDesc = [firstWord, lastWord].filter(Boolean).join(' ');
+                
+                // Caso extremo: Truncar para 25 caracteres, embora a lógica deva evitar isso.
+                return finalDesc.substring(0, MAX_LENGTH).trim();
+            }
+
+            return currentDescStr;
+        };
+        // --- FIM DA NOVA LÓGICA DE CORREÇÃO ---
+
+
         window.initFirebase = async () => {
             try {
                 const firebaseConfig = FIREBASE_CONFIG;
@@ -321,6 +404,13 @@
                     else if (fieldName === 'Qtde_Etiquetas') product[fieldName] = parseInt(rawValue) || 1;
                     else product[fieldName] = rawValue;
                 });
+                
+                // --- INSERÇÃO DA LÓGICA DE CORREÇÃO DA DESCRIÇÃO REDUZIDA ---
+                const productName = product.Produto || ''; 
+                // A Descrição Reduzida é calculada aqui, substituindo qualquer valor anterior
+                product.Descricao_Reduzida = generateReducedDescription(productName);
+                // --- FIM DA INSERÇÃO ---
+
                 // Fixa a Embalagem como 'UN' conforme solicitado
                 product.Embalagem = 'UN'; 
 
@@ -334,6 +424,7 @@
             const collectionPath = window.getProductCollectionPath();
             const batch = writeBatch(window.db);
             products.forEach(product => {
+                // O campo Descricao_Reduzida jÁ ESTÁ corrigido pelo processCSV
                 if (product.EAN) batch.set(doc(window.db, collectionPath, product.EAN), product);
             });
             try {
@@ -442,7 +533,10 @@
                     }
                     
                     document.getElementById('upload-status').textContent = 'Processando e salvando dados no Firestore...';
-                    const products = await window.processCSV(text);
+                    
+                    // products agora contêm a Descricao_Reduzida corrigida!
+                    const products = await window.processCSV(text); 
+                    
                     if (products.length > 0) {
                         await window.uploadDataToFirestore(products);
                     } else {
@@ -590,12 +684,12 @@
                 if (!svgElement) return;
 
                 JsBarcode(svgElement, ean, {
-                     format: ean.length === 13 ? "EAN13" : "CODE128",
-                     displayValue: false, 
-                     width: 1.8, 
-                     height: 40, 
-                     margin: 0,
-                     textMargin: 0
+                    format: ean.length === 13 ? "EAN13" : "CODE128",
+                    displayValue: false, 
+                    width: 1.8, 
+                    height: 40, 
+                    margin: 0,
+                    textMargin: 0
                 });
             } catch (e) {
                 console.error("JsBarcode error:", e);
@@ -740,17 +834,17 @@
 
              let successCount = 0;
              for (let i = 0; i < quantity; i++) {
-                if (i > 0) await new Promise(resolve => setTimeout(resolve, 300));
+                 if (i > 0) await new Promise(resolve => setTimeout(resolve, 300));
 
-                document.getElementById('print-status').textContent = `Gerando imagem ${i+1} de ${quantity} para ${selectedProduct.EAN}...`;
-                const success = await printSingleProduct(selectedProduct, 1); 
-                
-                if (success) {
-                    successCount++;
-                } else {
-                    document.getElementById('print-status').textContent = `Falha ao gerar a imagem ${i+1}. Interrompendo.`;
-                    break;
-                }
+                 document.getElementById('print-status').textContent = `Gerando imagem ${i+1} de ${quantity} para ${selectedProduct.EAN}...`;
+                 const success = await printSingleProduct(selectedProduct, 1); 
+                 
+                 if (success) {
+                     successCount++;
+                 } else {
+                     document.getElementById('print-status').textContent = `Falha ao gerar a imagem ${i+1}. Interrompendo.`;
+                     break;
+                 }
              }
              
              if(successCount === quantity){
