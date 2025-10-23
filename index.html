@@ -250,17 +250,26 @@
             return window.normalizeSearchText(header); 
         };
 
-        // --- INÍCIO DA NOVA LÓGICA DE CORREÇÃO (25 CARACTERES) ---
+        // --- INÍCIO DA NOVA LÓGICA DE CORREÇÃO (25 CARACTERES, NOVAS REGRAS) ---
         const MAX_LENGTH = 25;
 
         const generateReducedDescription = (productName) => {
             if (!productName) return '';
 
-            // 1. Remove a referência numérica final (e.g., " - 927476")
+            // 1. Limpeza: Remove a referência numérica final E segmentos indesejados (` - X - `)
             let cleanedName = String(productName).toUpperCase().trim();
-            cleanedName = cleanedName.replace(/\s-\s\d+$/, '');
+            
+            // Remove o código numérico final (ex: " - 2126037")
+            cleanedName = cleanedName.replace(/\s-\s\d+$/, ''); 
 
-            // 2. Remove "DE" e "DA" (case-insensitive) e divide em palavras
+            // Remove o segmento " - X" que aparece após o nome principal 
+            // Ex: "REQUEIJAO CREMOSO CAMPANELLA 200G - CX. 1" -> "REQUEIJAO CREMOSO CAMPANELLA 200G"
+            let parts = cleanedName.split(/\s-\s/);
+            if (parts.length > 1) {
+                 cleanedName = parts[0]; 
+            }
+            
+            // 2. Remove "DE" e "DA" e divide em palavras
             let words = cleanedName.split(/\s+/).filter(Boolean);
             let filteredWords = words.filter(word => !["DE", "DA"].includes(word));
 
@@ -268,21 +277,26 @@
                 return '';
             }
 
-            let firstWord = filteredWords[0];
+            // 3. Aplica as regras de manutenção/limitação
+            // Novo: Limita o primeiro nome a 6 caracteres
+            let firstWord = filteredWords[0].substring(0, 6); 
+            
             let middleWords = filteredWords.slice(1, -1);
             let lastWord = filteredWords.length > 1 ? filteredWords[filteredWords.length - 1] : '';
 
-            // Estrutura inicial: [primeira palavra, ...meio, última palavra]
+            // Estrutura base
             let currentDescList = [firstWord, ...middleWords, lastWord].filter(Boolean);
 
             const getCurrentDesc = (list) => list.join(' ');
             
             let currentDescStr = getCurrentDesc(currentDescList);
+
+            // Se couber, retorna imediatamente
             if (currentDescStr.length <= MAX_LENGTH) {
                 return currentDescStr;
             }
             
-            // 4. Abreviar palavras do meio (apenas se houver mais de duas palavras)
+            // 4. Abreviar palavras do meio (Novo: Sem pontos)
             let middleIndices = [];
             if (currentDescList.length > 2) {
                 for (let i = 1; i < currentDescList.length - 1; i++) {
@@ -298,39 +312,35 @@
             
             // Ordena pela maior palavra para tentar reduções mais eficazes primeiro
             shortenableWordsInfo.sort((a, b) => b.length - a.length);
-
+            
             for (const info of shortenableWordsInfo) {
                 let wordToShorten = currentDescList[info.index];
                 
-                // Estratégia 1: 4 letras + ponto (e.g., 'MURIATICO' -> 'MURI.')
+                // Estratégia 1: 4 letras (Ex: 'CREMOSO' -> 'CREM')
                 if (wordToShorten.length > 4) {
-                    currentDescList[info.index] = wordToShorten.substring(0, 4) + '.';
+                    currentDescList[info.index] = wordToShorten.substring(0, 4);
                     currentDescStr = getCurrentDesc(currentDescList);
                     if (currentDescStr.length <= MAX_LENGTH) {
                         return currentDescStr;
                     }
                 }
                 
-                // Estratégia 2: 1 letra + ponto (e.g., 'MURIATICO' -> 'M.')
-                currentDescList[info.index] = wordToShorten.substring(0, 1) + '.';
+                // Estratégia 2: 1 letra (Ex: 'CREMOSO' -> 'C')
+                currentDescList[info.index] = wordToShorten.substring(0, 1);
                 currentDescStr = getCurrentDesc(currentDescList);
                 if (currentDescStr.length <= MAX_LENGTH) {
                     return currentDescStr;
                 }
             }
 
-            // Fallback final: Se ainda estiver acima do limite, usa o resultado da redução mais agressiva.
+            // Fallback final: Trunca para 25 caracteres, se a redução mais agressiva falhar.
             if (currentDescStr.length > MAX_LENGTH) {
-                // Último recurso: tentar remover todo o meio e usar apenas a primeira e a última palavra
-                let finalDesc = [firstWord, lastWord].filter(Boolean).join(' ');
-                
-                // Caso extremo: Truncar para 25 caracteres, embora a lógica deva evitar isso.
-                return finalDesc.substring(0, MAX_LENGTH).trim();
+                return currentDescStr.substring(0, MAX_LENGTH).trim();
             }
 
             return currentDescStr;
         };
-        // --- FIM DA NOVA LÓGICA DE CORREÇÃO ---
+        // --- FIM DA LÓGICA DE CORREÇÃO ---
 
 
         window.initFirebase = async () => {
@@ -405,13 +415,13 @@
                     else product[fieldName] = rawValue;
                 });
                 
-                // --- INSERÇÃO DA LÓGICA DE CORREÇÃO DA DESCRIÇÃO REDUZIDA ---
+                // --- CHAMADA À LÓGICA DE CORREÇÃO DA DESCRIÇÃO REDUZIDA ---
                 const productName = product.Produto || ''; 
                 // A Descrição Reduzida é calculada aqui, substituindo qualquer valor anterior
                 product.Descricao_Reduzida = generateReducedDescription(productName);
                 // --- FIM DA INSERÇÃO ---
 
-                // Fixa a Embalagem como 'UN' conforme solicitado
+                // Fixa a Embalagem como 'UN'
                 product.Embalagem = 'UN'; 
 
                 if (product.EAN && product.EAN.length >= 8) data.push(product);
@@ -432,12 +442,12 @@
                 document.getElementById('upload-status').textContent = `Sucesso: ${products.length} produtos importados!`;
                 document.getElementById('search-input').focus();
                 
-                // --- MUDANÇA 2: CHAMA A IMPRESSÃO AUTOMÁTICA COMPLETA ---
+                // --- CHAMA A IMPRESSÃO AUTOMÁTICA COMPLETA ---
                 if (products.length > 0) {
                     document.getElementById('upload-status').textContent += ' (Iniciando impressão automática de todas as etiquetas...)';
                     printBatch(products); 
                 }
-                // --- FIM DA MUDANÇA 2 ---
+                // --- FIM DA CHAMADA ---
 
             } catch (error) {
                 document.getElementById('upload-status').textContent = `Erro ao salvar: ${error.message}`;
