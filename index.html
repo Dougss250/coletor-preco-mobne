@@ -98,12 +98,12 @@
             width: 100%;
         }
 
-        /* NOVO: Estilo para a informação de Unidade/Embalagem */
+        /* Estilo para a informação de Unidade/Embalagem (FIXO 1 UN) */
         .unit-info {
             font-size: 12px;
             font-weight: 800;
             color: #000;
-            margin-top: -2px; /* Subir um pouco a informação */
+            margin-top: -2px; 
             line-height: 1;
             text-align: center;
             width: 100%;
@@ -230,7 +230,7 @@
             'descricaoreduzida': 'Descricao_Reduzida',
             'ean': 'EAN',
             'refforn': 'Ref_Forn',
-            'embalagem': 'Embalagem', // Mantido para referência, mas será manual
+            'embalagem': 'Embalagem',
             'preconormal': 'Preco_Normal',
             'precopromocao': 'Preco_Promocao',
             'promocaoate': 'Promocao_ate',
@@ -321,8 +321,8 @@
                     else if (fieldName === 'Qtde_Etiquetas') product[fieldName] = parseInt(rawValue) || 1;
                     else product[fieldName] = rawValue;
                 });
-                // NOVO: Define um padrão para a Embalagem se não vier do arquivo
-                if (!product.Embalagem) product.Embalagem = 'UN'; 
+                // Fixa a Embalagem como 'UN' conforme solicitado
+                product.Embalagem = 'UN'; 
 
                 if (product.EAN && product.EAN.length >= 8) data.push(product);
             }
@@ -341,12 +341,12 @@
                 document.getElementById('upload-status').textContent = `Sucesso: ${products.length} produtos importados!`;
                 document.getElementById('search-input').focus();
                 
-                // --- MUDANÇA 1: REMOVIDA A IMPRESSÃO AUTOMÁTICA ---
-                // if (products.length > 0 && products.length <= 10) {
-                //     document.getElementById('upload-status').textContent += ' (Gerando etiquetas automaticamente...)';
-                //     printBatch(products); 
-                // }
-                // --- FIM DA MUDANÇA 1 ---
+                // --- MUDANÇA 2: CHAMA A IMPRESSÃO AUTOMÁTICA COMPLETA ---
+                if (products.length > 0) {
+                    document.getElementById('upload-status').textContent += ' (Iniciando impressão automática de todas as etiquetas...)';
+                    printBatch(products); 
+                }
+                // --- FIM DA MUDANÇA 2 ---
 
             } catch (error) {
                 document.getElementById('upload-status').textContent = `Erro ao salvar: ${error.message}`;
@@ -394,19 +394,12 @@
                 <div id="selected-product-details" class="text-sm space-y-1"><p class="text-center text-gray-500">Nenhum produto selecionado.</p></div>
                 <div id="print-controls" class="mt-4 hidden">
                     
-                    <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="grid grid-cols-1 gap-3 mb-4">
                         <div>
                             <label for="label-qty" class="block text-sm font-medium text-gray-700 mb-1">Qtd. Etiquetas:</label>
                             <input type="number" id="label-qty" min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg"/>
                         </div>
-                        <div>
-                            <label for="label-unit" class="block text-sm font-medium text-gray-700 mb-1">Unidade Venda:</label>
-                            <select id="label-unit" class="w-full p-2 border border-gray-300 rounded-lg bg-white">
-                                <option value="UN">UN</option>
-                                <option value="KG">KG</option>
-                            </select>
                         </div>
-                    </div>
                     
                     <button onclick="printLabelsManual()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-md">Imprimir Etiquetas (Gerar Imagem)</button>
                     <p id="print-status" class="text-xs mt-2 text-red-500"></p>
@@ -465,7 +458,7 @@
             else reader.readAsText(file);
         });
 
-        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO (MODIFICADA) ----------------------
+        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO (SIMPLIFICADA) ----------------------
 
         const searchProduct = () => {
             const rawQuery = document.getElementById('search-input').value;
@@ -506,13 +499,7 @@
             document.getElementById('search-input').value = product.EAN;
             document.getElementById('label-qty').value = product.Qtde_Etiquetas || 1;
             
-            // NOVO: Define o valor da unidade no seletor, se existir
-            const unitSelect = document.getElementById('label-unit');
-            if (product.Embalagem && (product.Embalagem.toUpperCase() === 'KG' || product.Embalagem.toUpperCase() === 'UN')) {
-                unitSelect.value = product.Embalagem.toUpperCase();
-            } else {
-                unitSelect.value = 'UN'; // Padrão
-            }
+            // Não há mais seletor de unidade para definir
 
             updateSelectionUI();
         };
@@ -528,8 +515,8 @@
                 const promoUntil = selectedProduct.Promocao_ate ? ` (até: ${selectedProduct.Promocao_ate.substring(0, 10)})` : '';
                 const normalPriceText = selectedProduct.Preco_Normal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-                // Obtém a unidade atual da interface para exibição
-                const unit = document.getElementById('label-unit')?.value || 'UN';
+                // Unidade fixa como 'UN' para a interface
+                const unit = 'UN';
 
                 detailsDiv.innerHTML = `
                     <p><strong>Cód:</strong> ${selectedProduct.EAN}</p>
@@ -548,17 +535,7 @@
             }
         };
 
-        // Adiciona listener para a mudança da unidade afetar o preview
-        document.addEventListener('DOMContentLoaded', () => {
-            const unitSelect = document.getElementById('label-unit');
-            if(unitSelect) {
-                unitSelect.addEventListener('change', () => {
-                    updateSelectionUI();
-                });
-            }
-        });
-
-        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (MODIFICADA) ----------------------
+        // ---------------------- 3. GERAÇÃO DA ETIQUETA E PREVIEW (MUDANÇA 1: FIXO 1 UN) ----------------------
 
         const generateLabelContent = (product, elementId) => {
             const isPromo = product.Preco_Promocao > 0 && product.Preco_Promocao < product.Preco_Normal;
@@ -574,9 +551,8 @@
             const [reais, centavos] = formattedPrice.split(',');
             const barcodeSvgId = `barcode-${elementId}`; 
             
-            // NOVO: Obtém a unidade do seletor. Se for o preview, usa o valor atual do seletor.
-            const unitElement = document.getElementById('label-unit');
-            const unit = unitElement ? unitElement.value : 'UN'; // Padrão se não encontrar o elemento (como ao gerar a imagem fora do DOM)
+            // Unidade fixa como 'UN'
+            const unit = 'UN'; 
 
             return `
                 <div class="gondola-label" id="label-content-${elementId}">
@@ -704,19 +680,16 @@
             document.getElementById('scanner-video').srcObject = null;
         };
         
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (MANTIDA/SIMPLIFICADA) ----------------------
+        // ---------------------- 5. LÓGICA DE IMPRESSÃO (AJUSTADA) ----------------------
 
         // Função principal de geração de imagem de um ÚNICO produto
         const printSingleProduct = async (product, quantity) => {
              const printContainer = document.getElementById('print-image-container');
              
-             // Usa o EAN para garantir que cada ID de etiqueta seja único
              const printId = `print-label-${product.EAN}-${Date.now()}`;
              
-             // ** IMPORTANTE: Temporariamente, defina o 'Embalagem' do produto para garantir que a imagem contenha a unidade correta **
-             // Embora o generateLabelContent tente pegar do DOM, para o dom-to-image é mais seguro.
-             const currentUnit = document.getElementById('label-unit')?.value || 'UN';
-             const productToPrint = { ...product, Embalagem: currentUnit };
+             // Usa o produto com Embalagem já fixada como 'UN'
+             const productToPrint = { ...product, Embalagem: 'UN' };
 
              printContainer.innerHTML = generateLabelContent(productToPrint, printId);
              
@@ -738,9 +711,11 @@
                 // Cria o link de download (simulando o envio para o app de impressão)
                 const downloadLink = document.createElement('a');
                 downloadLink.href = imageDataURL;
-                downloadLink.download = `${productToPrint.EAN}_etiqueta_x${quantity}_${currentUnit}_100x35mm.png`;
+                // Nome do arquivo ajustado para refletir a impressão em lote ou manual
+                const unitText = productToPrint.Embalagem || 'UN';
+                downloadLink.download = `${productToPrint.EAN}_etiqueta_x${quantity}_${unitText}_100x35mm.png`;
                 
-                // Simula o clique/download (que é o que a impressora Bluetooth faria)
+                // Simula o clique/download
                 downloadLink.click(); 
 
                 return true; // Sucesso
@@ -753,7 +728,7 @@
              }
         };
         
-        // Wrapper para impressão MANUAL (usa o produto selecionado globalmente)
+        // Função de impressão MANUAL (pode ser usada se quiser imprimir um item pesquisado)
         const printLabelsManual = async () => {
              if (!selectedProduct) {
                  document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
@@ -765,11 +740,10 @@
 
              let successCount = 0;
              for (let i = 0; i < quantity; i++) {
-                // Adiciona um pequeno atraso entre as gerações para evitar conflitos de renderização
                 if (i > 0) await new Promise(resolve => setTimeout(resolve, 300));
 
                 document.getElementById('print-status').textContent = `Gerando imagem ${i+1} de ${quantity} para ${selectedProduct.EAN}...`;
-                const success = await printSingleProduct(selectedProduct, 1); // Gera 1 de cada vez
+                const success = await printSingleProduct(selectedProduct, 1); 
                 
                 if (success) {
                     successCount++;
@@ -793,9 +767,42 @@
              }, 7000);
         };
         
-        // REMOVIDO: A função printBatch não é mais necessária, pois a impressão automática foi desativada.
-        // Se precisar reativá-la no futuro, ela deve ser reescrita para aceitar o campo 'Embalagem'
-        // definido manualmente.
+        // NOVO/REATIVADO: Função para imprimir todas as etiquetas do lote
+        const printBatch = async (products) => {
+            const statusElement = document.getElementById('upload-status');
+            let successCount = 0;
+            
+            // Calcula o total de etiquetas a serem impressas
+            const totalLabelsToPrint = products.reduce((sum, p) => sum + (p.Qtde_Etiquetas || 1), 0);
+            let labelsPrinted = 0;
+            
+            for (let i = 0; i < products.length; i++) {
+                const product = products[i];
+                // Usa a quantidade de etiquetas definida na planilha (Qtde_Etiquetas)
+                const quantity = product.Qtde_Etiquetas || 1;
+                
+                for (let j = 0; j < quantity; j++) {
+                    labelsPrinted++; 
+                    
+                    statusElement.textContent = `Imprimindo automaticamente (${labelsPrinted} de ${totalLabelsToPrint} etiquetas): ${product.EAN} (${j + 1} de ${quantity})...`;
+                    
+                    // Atraso crucial para garantir a renderização completa antes do próximo item
+                    await new Promise(resolve => setTimeout(resolve, 500)); 
+                    
+                    // Chamada para imprimir uma única etiqueta do produto
+                    const success = await printSingleProduct(product, 1); // Gera 1 de cada vez
+
+                    if(success) {
+                        successCount++;
+                    } else {
+                        console.error(`Falha ao imprimir a cópia ${j+1} de ${product.EAN}.`);
+                        // Não interrompe a impressão do lote, apenas a cópia
+                    }
+                }
+            }
+            
+            statusElement.textContent = `✅ Lote de ${products.length} produtos importados. ${successCount} etiquetas geradas automaticamente.`;
+        };
         
         // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
         window.searchProduct = searchProduct;
