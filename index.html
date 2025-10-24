@@ -14,6 +14,10 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         
+        // 💡 CORREÇÃO CRUCIAL: EXPORTANDO httpsCallable para o escopo global (window)
+        // Isso resolve o erro "window.httpsCallable is not a function"
+        window.httpsCallable = httpsCallable; 
+
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
             authDomain: "coletorprecosapp.firebaseapp.com",
@@ -161,7 +165,7 @@
     </main>
     
     <div id="print-image-container" class="print-image-container"></div>
-
+    
     <script>
         let selectedProduct = null;
 
@@ -192,9 +196,11 @@
             
             try {
                 // CHAMA O SERVIDOR SEGURO (CLOUD FUNCTION)
+                // Usando window.httpsCallable graças à correção
                 const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
                 const result = await consultaPrecoMobne({ codigoBarras: ean });
                 
+                // Verifica se a Cloud Function retornou o produto
                 const productData = result.data.product;
 
                 if (productData) {
@@ -212,8 +218,6 @@
 
         const selectProduct = (product) => {
             selectedProduct = product;
-            // remove a div de resultados que foi simplificada
-            // document.getElementById('search-results').innerHTML = '';
             document.getElementById('search-input').value = product.EAN;
             document.getElementById('label-qty').value = 1; 
             
@@ -420,11 +424,6 @@
         // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
         window.searchProductByEnter = searchProductByEnter;
         window.printLabelsManual = printLabelsManual; 
-        
-        // 💡 FUNÇÕES DO SCANNER REMOVIDAS
-        // window.startBarcodeScanner = startBarcodeScanner;
-        // window.stopBarcodeScanner = stopBarcodeScanner;
-        // ...
         
         // INICIALIZAÇÃO DO FIREBASE AO CARREGAR A PÁGINA
         window.onload = () => {
