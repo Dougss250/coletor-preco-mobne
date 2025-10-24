@@ -14,8 +14,6 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         
-        // 💡 REMOVIDAS: getFirestore, onSnapshot, writeBatch (não precisamos mais de busca/salvamento local)
-
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
             authDomain: "coletorprecosapp.firebaseapp.com",
@@ -30,10 +28,6 @@
         window.appId = null; 
         window.userId = null;
 
-        // 💡 FUNÇÕES NÃO MAIS USADAS:
-        // window.allProducts = []; 
-        // const INTERNAL_HEADER_MAP = {...}; 
-
         window.normalizeSearchText = (text) => {
             if (!text) return '';
             return text.toLowerCase()
@@ -41,18 +35,17 @@
                 .replace(/[^a-z0-9]/g, ''); 
         };
 
-        // 💡 NOVA LÓGICA DE NEGÓCIOS: FORMATAÇÃO DO NOME (Sua Regra)
+        // 💡 NOVA LÓGICA DE NEGÓCIOS: FORMATAÇÃO DO NOME (Sua Regra Personalizada)
         window.formatProductName = (fullName) => {
             if (!fullName) return '';
             
-            // 1. Padronização e divisão
+            // 1. Padronização
+            let originalParts = fullName.toUpperCase().split(' ');
             let parts = fullName.toUpperCase().split(' ').filter(p => p.trim() !== '');
             
             // 2. Identificação das Medidas (no final)
             let measureIndex = -1;
             const measureRegex = /(\d+(\.\d+)?)?(KG|ML|G|UN|CX|L|M|PC|GR|MM|CM)\b/i; 
-
-            let originalParts = fullName.toUpperCase().split(' ');
 
             for (let i = originalParts.length - 1; i >= 0; i--) {
                 if (measureRegex.test(originalParts[i]) || originalParts[i].includes('X')) { 
@@ -68,13 +61,13 @@
 
             // 4. Montagem do nome final
             if (measureIndex !== -1) {
-                // Se a medida foi encontrada (no índice do nome original)
+                // Pega a parte da medida no nome original
                 let measureParts = originalParts.slice(measureIndex).join(' ');
                 
                 // Limpa as preposições da parte da medida
                 measureParts = measureParts.split(' ').filter(p => !['DE', 'DA', 'DO', 'DAS', 'DOS'].includes(p)).join(' ');
                 
-                // Primeiro nome limpo + "... " + Medidas limpas
+                // Junta: Primeiro nome limpo + "... " + Medidas limpas
                 return `${finalFirstName} ... ${measureParts}`;
             } else {
                 // Se não houver medidas, retorna o nome completo limpo (sem DE/DA)
@@ -94,14 +87,13 @@
                 const app = initializeApp(firebaseConfig);
                 
                 window.auth = getAuth(app);
-                window.functions = getFunctions(app); // 💡 NOVO: Inicialização das Functions
+                window.functions = getFunctions(app); // Inicialização das Functions
 
                 await signInAnonymously(window.auth);
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
                 document.getElementById('user-id-display').textContent = `ID do Usuário: ${window.userId}`;
                 
-                // 💡 NOVO Status: Foco na busca por API
-                document.getElementById('status-message').textContent = 'Busca liberada! Pesquise por EAN para consultar preços.'; 
+                document.getElementById('status-message').textContent = 'Busca liberada! Use o campo para consultar preços.'; 
                 document.getElementById('product-count').textContent = `Status: Conectado.`;
                 document.getElementById('csv-file-input').disabled = true;
                 document.getElementById('upload-status').textContent = 'A busca de preços agora é feita ONLINE via API Mobne.';
@@ -111,9 +103,6 @@
                 document.getElementById('status-message').textContent = `Erro fatal: ${error.message}`;
             }
         };
-
-        // 💡 FUNÇÕES REMOVIDAS: window.getProductCollectionPath, window.setupProductListener, window.processCSV, window.uploadDataToFirestore.
-
     </script>
 </head>
 <body class="p-4 md:p-8">
@@ -133,17 +122,18 @@
 
         <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-inner">
             <h2 class="text-xl font-semibold text-gray-700 mb-3 flex justify-between items-center">
-                <span>2. Coleta e Seleção</span>
-                <span id="product-count" class="text-sm font-normal text-green-600">Status: Desconectado</span>
+                <span>2. Consulta de Preço</span>
+                <span id="product-count" class="text-sm font-normal text-green-600">Status: Conectado.</span>
             </h2>
             <div class="flex space-x-2">
-                <input type="text" id="search-input" oninput="searchProduct()" placeholder="Pesquisar por EAN ou Código de Barras..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"/>
-                <button onclick="startBarcodeScanner()" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center shadow-md flex-shrink-0" title="Escanear Código de Barras">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-                </button>
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Digite ou Escaneie o Código de Barras (EAN)..." 
+                    class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    onkeyup="if(event.keyCode == 13) searchProductByEnter()"  />
             </div>
-            <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1"></p>
-            <div id="search-results" class="max-h-60 overflow-y-auto space-y-2 mt-3"><p class="text-sm text-gray-500 p-2">Digite o EAN ou use o scanner.</p></div>
+            <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1">Digite o código ou use um leitor externo e pressione Enter.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -172,40 +162,36 @@
     
     <div id="print-image-container" class="print-image-container"></div>
 
-    <div id="scanner-modal" class="scanner-modal hidden">
-        <h3 class="text-white text-xl font-bold mb-4">Aponte a Câmera para o Código</h3>
-        <video id="scanner-video" class="scanner-video" autoplay playsinline></video>
-        <p id="scanner-feedback" class="text-yellow-400 mt-4 text-center"></p>
-        <button onclick="stopBarcodeScanner()" class="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl">Fechar Scanner</button>
-    </div>
-    
     <script>
         let selectedProduct = null;
-        let videoStream = null;
-        let scanInterval = null; 
 
-        // 💡 REMOVIDA: Lógica de upload de CSV/XLSX
+        // ---------------------- 2. LÓGICA DE BUSCA SIMPLIFICADA (DIGITAÇÃO/LEITOR) ----------------------
 
-        // ---------------------- 2. LÓGICA DE BUSCA E SELEÇÃO (AGORA CHAMA A CLOUD FUNCTION) ----------------------
+        // 💡 NOVA FUNÇÃO: Acionada ao pressionar Enter no campo
+        const searchProductByEnter = () => {
+            // Prepara o campo para o próximo item
+            document.getElementById('search-input').focus(); 
+            document.getElementById('search-input').select(); 
+            searchProductLogic(); // Chama a lógica principal de busca
+        };
 
-        const searchProduct = async () => {
+        // LÓGICA PRINCIPAL DE BUSCA (Chama o Servidor Seguro)
+        const searchProductLogic = async () => {
             const rawQuery = document.getElementById('search-input').value;
-            // Limpa o EAN, removendo caracteres não numéricos
             const ean = rawQuery.trim().replace(/\D/g, ''); 
             
-            // Limpa a tela
             selectedProduct = null;
-            updateSelectionUI();
+            updateSelectionUI(); // Limpa a tela
 
             if (ean.length < 8) {
-                document.getElementById('scanner-status').textContent = 'EAN deve ter no mínimo 8 dígitos.';
+                document.getElementById('scanner-status').textContent = 'EAN deve ter no mínimo 8 dígitos para consulta.';
                 return; 
             }
 
             document.getElementById('scanner-status').textContent = 'Buscando preço na API Mobne...';
             
             try {
-                // 💡 CHAMA O SERVIDOR SEGURO (CLOUD FUNCTION)
+                // CHAMA O SERVIDOR SEGURO (CLOUD FUNCTION)
                 const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
                 const result = await consultaPrecoMobne({ codigoBarras: ean });
                 
@@ -213,22 +199,23 @@
 
                 if (productData) {
                     selectProduct(productData);
-                    document.getElementById('scanner-status').textContent = '✅ Produto encontrado!';
+                    document.getElementById('scanner-status').textContent = '✅ Produto encontrado! Gere as etiquetas abaixo.';
                 } else {
-                    document.getElementById('scanner-status').textContent = '❌ Produto não encontrado ou Mobne retornou dados vazios.';
+                    document.getElementById('scanner-status').textContent = '❌ Produto não encontrado ou API Mobne retornou dados vazios.';
                 }
 
             } catch (error) {
                 console.error("Erro ao chamar Cloud Function:", error);
-                document.getElementById('scanner-status').textContent = `❌ Erro de busca: ${error.message}. Verifique o console.`;
+                document.getElementById('scanner-status').textContent = `❌ Erro de busca: ${error.message}. Verifique a conexão com a API.`;
             }
         };
 
         const selectProduct = (product) => {
             selectedProduct = product;
-            document.getElementById('search-results').innerHTML = '';
+            // remove a div de resultados que foi simplificada
+            // document.getElementById('search-results').innerHTML = '';
             document.getElementById('search-input').value = product.EAN;
-            document.getElementById('label-qty').value = 1; // Reseta para 1 ao selecionar
+            document.getElementById('label-qty').value = 1; 
             
             updateSelectionUI();
         };
@@ -244,12 +231,12 @@
                 const promoUntil = selectedProduct.Promocao_ate ? ` (até: ${selectedProduct.Promocao_ate.substring(0, 10)})` : '';
                 const normalPriceText = selectedProduct.Preco_Normal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-                // Unidade fixa como 'UN' para a interface
                 const unit = 'UN';
+                const productNameFormatted = window.formatProductName(selectedProduct.Descricao_Reduzida || selectedProduct.Produto);
 
                 detailsDiv.innerHTML = `
                     <p><strong>Cód:</strong> ${selectedProduct.EAN}</p>
-                    <p><strong>Desc:</strong> ${window.formatProductName(selectedProduct.Descricao_Reduzida || selectedProduct.Produto)}</p>
+                    <p><strong>Desc:</strong> ${productNameFormatted}</p>
                     <p><strong>Preço:</strong> <span class="${isPromo ? 'text-red-600 font-bold' : 'text-green-700 font-bold'}">R$ ${priceText}</span>${promoUntil}</p>
                     ${isPromo ? `<p class="text-xs line-through text-gray-500">De: R$ ${normalPriceText}</p>` : ''}
                     <p><strong>Unidade:</strong> <span class="font-bold">${unit}</span></p>
@@ -280,10 +267,9 @@
             const [reais, centavos] = formattedPrice.split(',');
             const barcodeSvgId = `barcode-${elementId}`; 
             
-            // Unidade fixa como 'UN'
             const unit = 'UN'; 
             
-            // 💡 APLICANDO A FORMATAÇÃO DO NOME AQUI
+            // APLICANDO A FORMATAÇÃO DO NOME
             const productNameForLabel = window.formatProductName(product.Descricao_Reduzida || product.Produto);
 
             return `
@@ -317,7 +303,6 @@
         };
 
         const generateBarcode = (ean, elementId) => {
-             // ... (Função JsBarcode mantida)
              try {
                 const svgElement = document.getElementById(`barcode-${elementId}`);
                 if (!svgElement) return;
@@ -349,71 +334,7 @@
             generateBarcode(product.EAN, uniqueId);
         };
         
-        // ---------------------- 4. LÓGICA DO SCANNER (MANTIDA) ----------------------
-
-        let barcodeDetector = null;
-        if ('BarcodeDetector' in window) {
-            try { 
-                barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'ean_8', 'upc_a'] });
-                document.getElementById('scanner-status').textContent = 'Scanner (Câmera) suportado neste navegador.';
-            } catch (e) { 
-                document.getElementById('scanner-status').textContent = '⚠️ Scanner suportado, mas falha na inicialização.';
-            }
-        } else {
-            document.getElementById('scanner-status').textContent = '⚠️ Scanner (Câmera) não suportado. Use a digitação manual.';
-        }
-
-        const scanFrame = async () => {
-            const scannerVideo = document.getElementById('scanner-video');
-            if (!document.getElementById('scanner-modal').classList.contains('hidden') && barcodeDetector && scannerVideo.readyState === scannerVideo.HAVE_ENOUGH_DATA) {
-                try {
-                    const barcodes = await barcodeDetector.detect(scannerVideo);
-                    if (barcodes.length > 0) {
-                        const ean = barcodes[0].rawValue;
-                        document.getElementById('search-input').value = ean;
-                        stopBarcodeScanner();
-                        searchProduct(); 
-                        return;
-                    } 
-                } catch (err) {
-                    console.error("Erro de detecção:", err);
-                }
-            }
-        };
-
-        const startBarcodeScanner = async () => {
-            if (!barcodeDetector) {
-                alert('O seu navegador não suporta a função de scanner por câmera.');
-                return;
-            }
-            document.getElementById('scanner-modal').classList.remove('hidden');
-            document.getElementById('scanner-feedback').textContent = 'Iniciando câmera...';
-            try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                document.getElementById('scanner-video').srcObject = videoStream;
-                await document.getElementById('scanner-video').play();
-                document.getElementById('scanner-feedback').textContent = 'Câmera iniciada. Aponte para o código de barras.';
-                scanInterval = setInterval(scanFrame, 200); 
-            } catch (err) {
-                document.getElementById('scanner-feedback').textContent = 'Não foi possível acessar a câmera. Verifique as permissões.';
-                setTimeout(stopBarcodeScanner, 3000); 
-            }
-        };
-
-        const stopBarcodeScanner = () => {
-            document.getElementById('scanner-modal').classList.add('hidden');
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            document.getElementById('scanner-video').srcObject = null;
-        };
-        
-        // ---------------------- 5. LÓGICA DE IMPRESSÃO (MANTIDA) ----------------------
+        // ---------------------- 4. LÓGICA DE IMPRESSÃO (MANTIDA) ----------------------
 
         // Função principal de geração de imagem de um ÚNICO produto
         const printSingleProduct = async (product, quantity) => {
@@ -421,7 +342,6 @@
              
              const printId = `print-label-${product.EAN}-${Date.now()}`;
              
-             // Usa o produto com Embalagem já fixada como 'UN'
              const productToPrint = { ...product, Embalagem: 'UN' };
 
              printContainer.innerHTML = generateLabelContent(productToPrint, printId);
@@ -442,21 +362,18 @@
                      }
                  });
                  
-                 // Cria o link de download (simulando o envio para o app de impressão)
                  const downloadLink = document.createElement('a');
                  downloadLink.href = imageDataURL;
                  const unitText = productToPrint.Embalagem || 'UN';
                  downloadLink.download = `${productToPrint.EAN}_etiqueta_x${quantity}_${unitText}_100x35mm.png`;
                  
-                 // Simula o clique/download
                  downloadLink.click(); 
 
-                 return true; // Sucesso
+                 return true; 
               } catch (error) {
                   console.error(`❌ Erro ao gerar imagem para ${productToPrint.EAN}:`, error);
-                  return false; // Falha
+                  return false; 
               } finally {
-                  // Limpa o contêiner após a geração
                   printContainer.innerHTML = '';
               }
         };
@@ -500,14 +417,14 @@
              }, 7000);
         };
         
-        // 💡 FUNÇÃO DE IMPRESSÃO EM LOTE REMOVIDA (não se aplica mais ao fluxo online)
-
         // EXPORTAÇÃO DAS FUNÇÕES PARA O ESCOPO GLOBAL
-        window.searchProduct = searchProduct;
-        window.startBarcodeScanner = startBarcodeScanner;
-        window.stopBarcodeScanner = stopBarcodeScanner;
+        window.searchProductByEnter = searchProductByEnter;
         window.printLabelsManual = printLabelsManual; 
-        window.httpsCallable = httpsCallable; // Adiciona para o escopo global do script principal
+        
+        // 💡 FUNÇÕES DO SCANNER REMOVIDAS
+        // window.startBarcodeScanner = startBarcodeScanner;
+        // window.stopBarcodeScanner = stopBarcodeScanner;
+        // ...
         
         // INICIALIZAÇÃO DO FIREBASE AO CARREGAR A PÁGINA
         window.onload = () => {
@@ -515,7 +432,7 @@
         };
 
     </script>
-
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -525,7 +442,6 @@
         
         /* --- ESTILOS DA ETIQUETA 100MM x 35MM (377px x 132px) --- */
         .gondola-label {
-            /* DIMENSÃO FINAL: 100MM x 35MM em 96 DPI -> 377px x 132px */
             width: 377px; 
             height: 132px; 
             padding: 4px; 
@@ -537,7 +453,6 @@
             grid-template-rows: 45px 1fr; 
         }
         
-        /* 1. NOME DO PRODUTO (TOPO - MAIOR E CENTRALIZADO SEM CORTAR) */
         .product-name-area {
             grid-row: 1;
             display: flex;
@@ -546,7 +461,6 @@
             width: 100%;
             height: 45px; 
             overflow: hidden;
-            /* AJUSTE CRUCIAL: Adicionado padding superior para evitar o corte do nome */
             padding: 2px 4px 0 4px; 
         }
         .product-name {
@@ -568,7 +482,6 @@
             grid-row: 2;
             display: flex;
             align-items: center; 
-            /* AJUSTE CRUCIAL: Adicionado padding inferior para evitar corte e desalinhamento do preço */
             padding-bottom: 4px; 
         }
 
@@ -583,14 +496,12 @@
         }
         .barcode-container {
              width: 95%; 
-             /* AJUSTE DE ALTURA */
              height: 40px; 
              display: flex;
              margin-bottom: 2px;
         }
         .barcode-container svg {
              width: 100%;
-             /* AJUSTE DE ALTURA: Alinhado com o container */
              height: 40px; 
         }
         .ean-text {
@@ -684,28 +595,6 @@
             z-index: -1;
         }
 
-        /* Estilos do Scanner Modal (Manter) */
-        .scanner-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .scanner-video {
-            max-width: 90vw;
-            max-height: 80vh;
-            width: auto;
-            height: auto;
-            border: 4px solid #fff;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-        }
     </style>
 </body>
 </html>
