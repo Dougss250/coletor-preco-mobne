@@ -12,10 +12,10 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        // 💡 REMOVIDO: import { getFunctions, httpsCallable } from "...";
         
-        // 💡 CORREÇÃO CRUCIAL: Exportando httpsCallable para o escopo global (window)
-        window.httpsCallable = httpsCallable; 
+        // 💡 NÃO PRECISAMOS MAIS DE httpsCallable no Front-end
+        // window.httpsCallable = httpsCallable;
 
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyC2F-2pZuU0bkAUIxRSOuM2E_xiD2xDyPE",
@@ -26,7 +26,7 @@
             appId: "1:127089195149:web:3d2c8205cf8fb921124ac4"
         };
         
-        window.functions = null; 
+        // 💡 REMOVIDO: window.functions = null; 
         window.auth = null;
         window.appId = null; 
         window.userId = null;
@@ -80,7 +80,7 @@
                 const app = initializeApp(firebaseConfig);
                 
                 window.auth = getAuth(app);
-                window.functions = getFunctions(app);
+                // 💡 REMOVIDO: window.functions = getFunctions(app);
 
                 await signInAnonymously(window.auth);
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
@@ -159,7 +159,7 @@
     <script>
         let selectedProduct = null;
 
-        // ---------------------- 2. LÓGICA DE BUSCA ----------------------
+        // ---------------------- 2. LÓGICA DE BUSCA (AGORA USA FETCH HTTP DIRETO) ----------------------
 
         const searchProductByEnter = () => {
             document.getElementById('search-input').focus(); 
@@ -182,17 +182,33 @@
             document.getElementById('scanner-status').textContent = 'Buscando preço na API Mobne...';
             
             try {
-                // 💡 LOG para console para ver o EAN
-                console.log("EAN sendo enviado para Cloud Function:", ean);
-
-                const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
+                // 🔑 ENDPOINT DA CLOUD FUNCTION (Você precisa usar a URL completa da sua função HTTPS)
+                const functionUrl = 'https://us-central1-coletorprecosapp.cloudfunctions.net/consultaPrecoMobne';
                 
-                // 🔑 CORREÇÃO AQUI: Garante que o objeto data não é nulo/vazio
-                const result = await consultaPrecoMobne({ codigoBarras: ean });
-                
-                const productData = result.data.product;
+                // 🔑 Chamada HTTP GET Simples, passando o EAN como parâmetro de consulta na URL
+                const response = await fetch(`${functionUrl}?ean=${ean}`);
 
-                if (productData) {
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: `Falha na requisição HTTP com status ${response.status}.` }));
+                    
+                    // Tratamento de erros HTTP
+                    if (response.status === 404) {
+                        document.getElementById('scanner-status').textContent = '❌ Produto não encontrado na base de dados Mobne.';
+                    } else if (response.status === 400 && errorData.error) {
+                         // Erro do Backend (Ex: "O código de barras é obrigatório")
+                        document.getElementById('scanner-status').textContent = `❌ Erro de busca: ${errorData.error}`;
+                    } else if (response.status === 401) {
+                        document.getElementById('scanner-status').textContent = `❌ Erro de autenticação: Verifique a chave Mobne no seu servidor.`;
+                    } else {
+                        document.getElementById('scanner-status').textContent = `❌ Erro de conexão com a API: Status ${response.status}.`;
+                    }
+                    return;
+                }
+                
+                const result = await response.json();
+                const productData = result.product; 
+
+                if (result.success && productData) {
                     selectProduct(productData);
                     document.getElementById('scanner-status').textContent = '✅ Produto encontrado! Gere as etiquetas abaixo.';
                 } else {
@@ -200,15 +216,8 @@
                 }
 
             } catch (error) {
-                // Se a Cloud Function retornar um erro, ele será capturado aqui
                 console.error("Erro ao chamar Cloud Function:", error);
-                
-                // Erros retornados da Cloud Function (como "O código de barras é obrigatório")
-                if (error.code && error.code === 'invalid-argument') {
-                    document.getElementById('scanner-status').textContent = `❌ Erro de busca: O código de barras é obrigatório. (Verifique o EAN).`;
-                } else {
-                    document.getElementById('scanner-status').textContent = `❌ Erro de conexão com a API: ${error.message}.`;
-                }
+                document.getElementById('scanner-status').textContent = `❌ Erro de busca inesperado: ${error.message}.`;
             }
         };
 
