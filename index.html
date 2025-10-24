@@ -14,8 +14,7 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         
-        // 💡 CORREÇÃO CRUCIAL: EXPORTANDO httpsCallable para o escopo global (window)
-        // Isso resolve o erro "window.httpsCallable is not a function"
+        // 💡 CORREÇÃO CRUCIAL: Exportando httpsCallable para o escopo global (window)
         window.httpsCallable = httpsCallable; 
 
         const FIREBASE_CONFIG = {
@@ -39,15 +38,13 @@
                 .replace(/[^a-z0-9]/g, ''); 
         };
 
-        // 💡 NOVA LÓGICA DE NEGÓCIOS: FORMATAÇÃO DO NOME (Sua Regra Personalizada)
+        // 💡 LÓGICA DE NEGÓCIOS: FORMATAÇÃO DO NOME (Primeiro nome + Medidas)
         window.formatProductName = (fullName) => {
             if (!fullName) return '';
             
-            // 1. Padronização
             let originalParts = fullName.toUpperCase().split(' ');
             let parts = fullName.toUpperCase().split(' ').filter(p => p.trim() !== '');
             
-            // 2. Identificação das Medidas (no final)
             let measureIndex = -1;
             const measureRegex = /(\d+(\.\d+)?)?(KG|ML|G|UN|CX|L|M|PC|GR|MM|CM)\b/i; 
 
@@ -58,23 +55,15 @@
                 }
             }
             
-            // 3. Remoção de preposições (DE, DA, DO, DAS, DOS)
             parts = parts.filter(p => !['DE', 'DA', 'DO', 'DAS', 'DOS'].includes(p));
-            
             let finalFirstName = parts[0] || '';
 
-            // 4. Montagem do nome final
             if (measureIndex !== -1) {
-                // Pega a parte da medida no nome original
                 let measureParts = originalParts.slice(measureIndex).join(' ');
-                
-                // Limpa as preposições da parte da medida
                 measureParts = measureParts.split(' ').filter(p => !['DE', 'DA', 'DO', 'DAS', 'DOS'].includes(p)).join(' ');
                 
-                // Junta: Primeiro nome limpo + "... " + Medidas limpas
                 return `${finalFirstName} ... ${measureParts}`;
             } else {
-                // Se não houver medidas, retorna o nome completo limpo (sem DE/DA)
                 return parts.join(' ');
             }
         };
@@ -91,7 +80,7 @@
                 const app = initializeApp(firebaseConfig);
                 
                 window.auth = getAuth(app);
-                window.functions = getFunctions(app); // Inicialização das Functions
+                window.functions = getFunctions(app);
 
                 await signInAnonymously(window.auth);
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
@@ -135,7 +124,8 @@
                     id="search-input" 
                     placeholder="Digite ou Escaneie o Código de Barras (EAN)..." 
                     class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    onkeyup="if(event.keyCode == 13) searchProductByEnter()"  />
+                    onkeyup="if(event.keyCode == 13) searchProductByEnter()"
+                />
             </div>
             <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1">Digite o código ou use um leitor externo e pressione Enter.</p>
         </div>
@@ -169,23 +159,20 @@
     <script>
         let selectedProduct = null;
 
-        // ---------------------- 2. LÓGICA DE BUSCA SIMPLIFICADA (DIGITAÇÃO/LEITOR) ----------------------
+        // ---------------------- 2. LÓGICA DE BUSCA ----------------------
 
-        // 💡 NOVA FUNÇÃO: Acionada ao pressionar Enter no campo
         const searchProductByEnter = () => {
-            // Prepara o campo para o próximo item
             document.getElementById('search-input').focus(); 
             document.getElementById('search-input').select(); 
-            searchProductLogic(); // Chama a lógica principal de busca
+            searchProductLogic();
         };
 
-        // LÓGICA PRINCIPAL DE BUSCA (Chama o Servidor Seguro)
         const searchProductLogic = async () => {
             const rawQuery = document.getElementById('search-input').value;
             const ean = rawQuery.trim().replace(/\D/g, ''); 
             
             selectedProduct = null;
-            updateSelectionUI(); // Limpa a tela
+            updateSelectionUI();
 
             if (ean.length < 8) {
                 document.getElementById('scanner-status').textContent = 'EAN deve ter no mínimo 8 dígitos para consulta.';
@@ -195,12 +182,9 @@
             document.getElementById('scanner-status').textContent = 'Buscando preço na API Mobne...';
             
             try {
-                // CHAMA O SERVIDOR SEGURO (CLOUD FUNCTION)
-                // Usando window.httpsCallable graças à correção
                 const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
                 const result = await consultaPrecoMobne({ codigoBarras: ean });
                 
-                // Verifica se a Cloud Function retornou o produto
                 const productData = result.data.product;
 
                 if (productData) {
@@ -273,7 +257,6 @@
             
             const unit = 'UN'; 
             
-            // APLICANDO A FORMATAÇÃO DO NOME
             const productNameForLabel = window.formatProductName(product.Descricao_Reduzida || product.Produto);
 
             return `
@@ -340,21 +323,16 @@
         
         // ---------------------- 4. LÓGICA DE IMPRESSÃO (MANTIDA) ----------------------
 
-        // Função principal de geração de imagem de um ÚNICO produto
         const printSingleProduct = async (product, quantity) => {
              const printContainer = document.getElementById('print-image-container');
-             
              const printId = `print-label-${product.EAN}-${Date.now()}`;
-             
              const productToPrint = { ...product, Embalagem: 'UN' };
 
              printContainer.innerHTML = generateLabelContent(productToPrint, printId);
-             
              generateBarcode(productToPrint.EAN, printId);
              const labelElement = document.getElementById(`label-content-${printId}`);
              
              try {
-                 // Aumenta a escala para melhor qualidade de impressão
                  const imageDataURL = await domtoimage.toPng(labelElement, { 
                      width: 377 * 4, 
                      height: 132 * 4, 
@@ -370,7 +348,6 @@
                  downloadLink.href = imageDataURL;
                  const unitText = productToPrint.Embalagem || 'UN';
                  downloadLink.download = `${productToPrint.EAN}_etiqueta_x${quantity}_${unitText}_100x35mm.png`;
-                 
                  downloadLink.click(); 
 
                  return true; 
@@ -382,7 +359,6 @@
               }
         };
         
-        // Função de impressão MANUAL
         const printLabelsManual = async () => {
              if (!selectedProduct) {
                  document.getElementById('print-status').textContent = 'Selecione um produto primeiro.';
@@ -395,7 +371,6 @@
              let successCount = 0;
              for (let i = 0; i < quantity; i++) {
                  if (i > 0) await new Promise(resolve => setTimeout(resolve, 300));
-
                  document.getElementById('print-status').textContent = `Gerando imagem ${i+1} de ${quantity} para ${selectedProduct.EAN}...`;
                  const success = await printSingleProduct(selectedProduct, 1); 
                  
@@ -439,7 +414,6 @@
             background-color: #f7f7f7;
         }
         
-        /* --- ESTILOS DA ETIQUETA 100MM x 35MM (377px x 132px) --- */
         .gondola-label {
             width: 377px; 
             height: 132px; 
@@ -476,7 +450,6 @@
             -webkit-box-orient: vertical;
         }
 
-        /* 2. ÁREA INFERIOR (CÓDIGO + PREÇO) */
         .bottom-row {
             grid-row: 2;
             display: flex;
@@ -484,7 +457,6 @@
             padding-bottom: 4px; 
         }
 
-        /* 2.1. CÓDIGO DE BARRAS (60% da largura - PERFEITO) */
         .barcode-area {
             width: 60%; 
             display: flex;
@@ -513,7 +485,6 @@
             width: 100%;
         }
 
-        /* Estilo para a informação de Unidade/Embalagem (FIXO 1 UN) */
         .unit-info {
             font-size: 12px;
             font-weight: 800;
@@ -524,7 +495,6 @@
             width: 100%;
         }
 
-        /* 2.2. PREÇO (40% da largura - CENTRALIZADO) */
         .price-area {
             width: 40%; 
             display: flex;
@@ -565,7 +535,6 @@
             line-height: 1.1;
         }
 
-        /* Estilos de Promoção (Mantidos) */
         .promo-info {
             position: absolute;
             top: 0; 
@@ -586,7 +555,6 @@
             line-height: 1;
         }
 
-        /* Div Oculta para Renderização da Imagem de Impressão */
         .print-image-container {
             position: fixed;
             top: -9999px; 
