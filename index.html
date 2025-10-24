@@ -182,10 +182,12 @@
             document.getElementById('scanner-status').textContent = 'Buscando preço na API Mobne...';
             
             try {
-                // 💡 DEBUG: Verificação no console se o EAN está sendo enviado
+                // 💡 LOG para console para ver o EAN
                 console.log("EAN sendo enviado para Cloud Function:", ean);
 
                 const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
+                
+                // 🔑 CORREÇÃO AQUI: Garante que o objeto data não é nulo/vazio
                 const result = await consultaPrecoMobne({ codigoBarras: ean });
                 
                 const productData = result.data.product;
@@ -198,8 +200,15 @@
                 }
 
             } catch (error) {
+                // Se a Cloud Function retornar um erro, ele será capturado aqui
                 console.error("Erro ao chamar Cloud Function:", error);
-                document.getElementById('scanner-status').textContent = `❌ Erro de busca: ${error.message}. Verifique a conexão com a API.`;
+                
+                // Erros retornados da Cloud Function (como "O código de barras é obrigatório")
+                if (error.code && error.code === 'invalid-argument') {
+                    document.getElementById('scanner-status').textContent = `❌ Erro de busca: O código de barras é obrigatório. (Verifique o EAN).`;
+                } else {
+                    document.getElementById('scanner-status').textContent = `❌ Erro de conexão com a API: ${error.message}.`;
+                }
             }
         };
 
