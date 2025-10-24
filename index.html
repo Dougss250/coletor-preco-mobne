@@ -124,7 +124,7 @@
                     id="search-input" 
                     placeholder="Digite ou Escaneie o Código de Barras (EAN)..." 
                     class="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    onkeyup="if(event.keyCode == 13) searchProductByEnter()"
+                    onkeyup="if(event.keyCode == 13 && this.value.length >= 8) searchProductByEnter()"
                 />
             </div>
             <p id="scanner-status" class="text-xs text-gray-500 mt-1 pl-1">Digite o código ou use um leitor externo e pressione Enter.</p>
@@ -182,6 +182,9 @@
             document.getElementById('scanner-status').textContent = 'Buscando preço na API Mobne...';
             
             try {
+                // 💡 DEBUG: Verificação no console se o EAN está sendo enviado
+                console.log("EAN sendo enviado para Cloud Function:", ean);
+
                 const consultaPrecoMobne = window.httpsCallable(window.functions, 'consultaPrecoMobne');
                 const result = await consultaPrecoMobne({ codigoBarras: ean });
                 
